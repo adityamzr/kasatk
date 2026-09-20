@@ -83,6 +83,7 @@ model User {
   savings      SavingsTransaction[]
   auditLogs    AuditLog[]
   receipts     Receipt[]
+  authSessions AuthSession[]
 }
 
 model Role {
@@ -148,6 +149,7 @@ model Parent {
   updatedAt   DateTime  @updatedAt
 
   students StudentParent[]
+  sessions ParentSession[]
 
   @@index([name])
 }
@@ -326,4 +328,26 @@ model NotificationLog {
   savings           SavingsTransaction? @relation(fields: [savingsId], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt])
+}
+
+model AuthSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model ParentSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  parentId  String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  parent    Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@index([parentId, expiresAt])
 }
