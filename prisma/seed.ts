@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -53,6 +54,15 @@ async function main() {
       }
     }
   }
+
+  const adminRole = await prisma.role.findUniqueOrThrow({ where: { name: 'SUPER_ADMIN' } });
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? 'ChangeMe123!';
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@cerdasceria.sch.id' },
+    update: { name: 'Administrator', username: 'admin', passwordHash: await bcrypt.hash(adminPassword, 12), status: 'ACTIVE' },
+    create: { name: 'Administrator', email: 'admin@cerdasceria.sch.id', username: 'admin', passwordHash: await bcrypt.hash(adminPassword, 12) },
+  });
+  await prisma.userRole.upsert({ where: { userId_roleId: { userId: admin.id, roleId: adminRole.id } }, update: {}, create: { userId: admin.id, roleId: adminRole.id } });
 
   const kelasA = await prisma.classRoom.upsert({ where: { name_academicYear: { name: 'Kelompok A', academicYear: '2026/2027' } }, update: {}, create: { name: 'Kelompok A', academicYear: '2026/2027' } });
   const kelasB = await prisma.classRoom.upsert({ where: { name_academicYear: { name: 'Kelompok B', academicYear: '2026/2027' } }, update: {}, create: { name: 'Kelompok B', academicYear: '2026/2027' } });
