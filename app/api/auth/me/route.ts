@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getCurrentParent, getCurrentUser } from '@/lib/auth';
 export async function GET() {

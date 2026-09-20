@@ -49,3 +49,9 @@ export async function getCurrentParent() {
 }
 
 export const sessionCookie = (name: string, token: string) => ({ name, value: token, httpOnly: true, sameSite: 'lax' as const, secure: process.env.NODE_ENV === 'production', path: '/', maxAge: SESSION_DAYS * 24 * 60 * 60 });
+
+export async function hasPermission(permissionKey: string) {
+  const user = await getCurrentUser();
+  if (!user) return false;
+  return user.roles.some((userRole) => userRole.role.permissions.some((rolePermission) => rolePermission.permission.key === permissionKey));
+}
