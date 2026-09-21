@@ -2,5 +2,42 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission, errorResponse } from '@/lib/api';
-export async function GET(){const denied=await requirePermission('students.manage');if(denied)return denied;try{return NextResponse.json(await prisma.student.findMany({orderBy:{name:'asc'},include:{classRoom:true,parents:{include:{parent:true}}}}));}catch(e){return errorResponse(e)}}
-export async function POST(req:Request){const denied=await requirePermission('students.manage');if(denied)return denied;try{const b=await req.json();if(!b.nis?.trim()||!b.name?.trim()||!b.dateOfBirth||!b.classRoomId)return NextResponse.json({message:'NIS, nama, tanggal lahir, dan kelas wajib diisi.'},{status:400});const student=await prisma.student.create({data:{nis:b.nis.trim(),name:b.name.trim(),dateOfBirth:new Date(b.dateOfBirth),gender:b.gender?.trim()||null,classRoomId:b.classRoomId,notes:b.notes?.trim()||null,status:'ACTIVE',parents:b.parentId?{create:{parentId:b.parentId,isPrimary:true,relation:b.relation?.trim()||'Wali'}}:undefined},include:{classRoom:true,parents:{include:{parent:true}}}});return NextResponse.json(student,{status:201})}catch(e){return errorResponse(e)}}
+import { normalizePhone } from '@/lib/phone';
+
+export async function GET(req: Request) {
+  const denied = await requirePermission('students.manage'); if (denied) return denied;
+  try { const url = new URL(req.url); const search = url.searchParams.get('search')?.trim(); const classRoomId = url.searchParams.get('classRoomId') || undefined; const status = url.searchParams.get('status') as any || undefined;
+    return NextResponse.json(await prisma.student.findMany({ where: { ...(search ? { OR: [{ name: { contains: search, mode: 'insensitive' } }, { nis: { contains: search, mode: 'insensitive' } }] } : {}), ...(classRoomId ? { classRoomId } : {}), ...(status ? { status } : {}) }, orderBy: { name: 'asc' }, include: { classRoom: true, parents: { include: { parent: true } } } }));
+  } catch (e) { return errorResponse(e); }
+}
+
+export async function POST(req: Request) {
+  const denied = await requirePermission('students.manage'); if (denied) return denied;
+  try {
+    const body = await req.json(); const s = body.student ?? body; const guardians = body.guardians ?? (body.parentId ? [{ type: 'existing', parentId: body.parentId, relation: body.relation, isPrimary: true }] : []);
+    if (!s.nis?.trim() || !s.name?.trim() || !s.dateOfBirth || !s.classRoomId) return NextResponse.json({ message: 'NIS, nama, tanggal lahir, dan kelas wajib diisi.' }, { status: 400 });
+    if (!Array.isArray(guardians) || guardians.length === 0) return NextResponse.json({ message: 'Tambahkan minimal satu orang tua/wali.' }, { status: 400 });
+    if (guardians.filter((g: any) => g.isPrimary).length > 1) return NextResponse.json({ message: 'Hanya boleh ada satu kontak utama.' }, { status: 400 });
+    const user = await (await import('@/lib/auth')).getCurrentUser(); if (!user) return NextResponse.json({ message: 'Sesi login tidak ditemukan.' }, { status: 401 });
+    const result = await prisma.$transaction(async (tx) => {
+      const links: { parentId: string; isPrimary: boolean; relation: string }[] = [];
+      for (const guardian of guardians) {
+        const relation = ['AYAH', 'IBU', 'WALI', 'LAINNYA'].includes(String(guardian.relation).toUpperCase()) ? String(guardian.relation).toUpperCase() : 'LAINNYA';
+        let parentId = guardian.parentId;
+        if (guardian.type === 'new' || !parentId) {
+          if (!guardian.parent?.name?.trim() || !guardian.parent?.phone?.trim()) throw new Error('Nama dan nomor WhatsApp orang tua baru wajib diisi.');
+          const phone = normalizePhone(guardian.parent.phone);
+          const existing = await tx.parent.findUnique({ where: { phone } });
+          if (existing) throw new Error(`Nomor WhatsApp ini sudah terdaftar atas nama ${existing.name}. Gunakan data orang tua yang sudah ada.`);
+          const parent = await tx.parent.create({ data: { name: guardian.parent.name.trim(), phone, email: guardian.parent.email?.trim() || null, dateOfBirth: guardian.parent.dateOfBirth ? new Date(guardian.parent.dateOfBirth) : null } }); parentId = parent.id;
+        } else { const parent = await tx.parent.findUnique({ where: { id: parentId } }); if (!parent) throw new Error('Orang tua yang dipilih tidak ditemukan.'); }
+        links.push({ parentId, relation, isPrimary: Boolean(guardian.isPrimary) });
+      }
+      const primary = links.some((l) => l.isPrimary) ? links : links.map((l, i) => ({ ...l, isPrimary: i === 0 }));
+      const student = await tx.student.create({ data: { nis: s.nis.trim(), name: s.name.trim(), dateOfBirth: new Date(s.dateOfBirth), gender: s.gender?.trim() || null, classRoomId: s.classRoomId, notes: s.notes?.trim() || null, customSppAmount: s.customSppAmount ? Number(s.customSppAmount) : null, parents: { create: primary } }, include: { classRoom: true, parents: { include: { parent: true } } } });
+      await tx.auditLog.create({ data: { userId: user.id, action: 'CREATE_STUDENT', entity: 'Student', entityId: student.id, afterData: { nis: student.nis, name: student.name, guardians: primary } } });
+      return student;
+    });
+    return NextResponse.json(result, { status: 201 });
+  } catch (e) { return errorResponse(e); }
+}
