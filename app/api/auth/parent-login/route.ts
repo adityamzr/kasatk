@@ -2,8 +2,8 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createParentSession, sessionCookie, PARENT_SESSION_COOKIE } from '@/lib/auth';
+import { normalizePhone } from '@/lib/phone';
 
-function normalizePhone(value: string) { return value.replace(/[^0-9+]/g, '').replace(/^08/, '+628'); }
 function dateOnly(value: unknown) { const date = new Date(String(value)); return Number.isNaN(date.getTime()) ? null : date; }
 
 export async function POST(request: Request) {

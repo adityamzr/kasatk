@@ -28,7 +28,7 @@ export async function POST(req: Request) {
           if (!guardian.parent?.name?.trim() || !guardian.parent?.phone?.trim()) throw new Error('Nama dan nomor WhatsApp orang tua baru wajib diisi.');
           const phone = normalizePhone(guardian.parent.phone);
           const existing = await tx.parent.findUnique({ where: { phone } });
-          if (existing) { const conflict: any = new Error(`Nomor WhatsApp ini sudah terdaftar atas nama ${existing.name}.`); conflict.code = 'PARENT_PHONE_EXISTS'; conflict.existingParent = { id: existing.id, name: existing.name, phone: existing.phone }; throw conflict; }
+          if (existing) { const conflict: any = new Error(`Nomor WhatsApp ini sudah terdaftar atas nama ${existing.name}.`); conflict.code = 'PARENT_PHONE_EXISTS'; conflict.guardianClientId = guardian.clientId; conflict.existingParent = { id: existing.id, name: existing.name, phone: existing.phone }; throw conflict; }
           const parent = await tx.parent.create({ data: { name: guardian.parent.name.trim(), phone, email: guardian.parent.email?.trim() || null, dateOfBirth: guardian.parent.dateOfBirth ? new Date(guardian.parent.dateOfBirth) : null } }); parentId = parent.id;
         } else { const parent = await tx.parent.findUnique({ where: { id: parentId } }); if (!parent) throw new Error('Orang tua yang dipilih tidak ditemukan.'); }
         if (links.some((link) => link.parentId === parentId)) throw new Error('Orang tua/wali yang sama tidak dapat ditambahkan dua kali.');
