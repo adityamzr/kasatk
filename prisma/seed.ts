@@ -17,8 +17,8 @@ const permissions = [
 async function main() {
   await prisma.schoolSetting.upsert({
     where: { id: 1 },
-    update: {},
-    create: { schoolName: 'PAUD Cerdas Ceria', receiptPrefix: 'KW' },
+    update: { defaultSppAmount: 250000 },
+    create: { schoolName: 'PAUD Cerdas Ceria', receiptPrefix: 'SPP', defaultSppAmount: 250000 },
   });
 
   const permissionMap = new Map<string, string>();
