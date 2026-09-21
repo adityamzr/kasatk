@@ -8,7 +8,7 @@ export async function GET(req: Request) {
   const denied = await requirePermission('students.manage'); if (denied) return denied;
   try { const url = new URL(req.url); const search = url.searchParams.get('search')?.trim(); const classRoomId = url.searchParams.get('classRoomId') || undefined; const status = url.searchParams.get('status') as any || undefined;
     return NextResponse.json(await prisma.student.findMany({ where: { ...(search ? { OR: [{ name: { contains: search, mode: 'insensitive' } }, { nis: { contains: search, mode: 'insensitive' } }] } : {}), ...(classRoomId ? { classRoomId } : {}), ...(status ? { status } : {}) }, orderBy: { name: 'asc' }, include: { classRoom: true, parents: { include: { parent: true } } } }));
-  } catch (e) { return errorResponse(e); }
+  } catch (e: any) { if (e?.code === 'PARENT_PHONE_EXISTS') return NextResponse.json({ code: e.code, message: e.message, existingParent: e.existingParent }, { status: 409 }); return errorResponse(e); }
 }
 
 export async function POST(req: Request) {
@@ -28,9 +28,10 @@ export async function POST(req: Request) {
           if (!guardian.parent?.name?.trim() || !guardian.parent?.phone?.trim()) throw new Error('Nama dan nomor WhatsApp orang tua baru wajib diisi.');
           const phone = normalizePhone(guardian.parent.phone);
           const existing = await tx.parent.findUnique({ where: { phone } });
-          if (existing) throw new Error(`Nomor WhatsApp ini sudah terdaftar atas nama ${existing.name}. Gunakan data orang tua yang sudah ada.`);
+          if (existing) { const conflict: any = new Error(`Nomor WhatsApp ini sudah terdaftar atas nama ${existing.name}.`); conflict.code = 'PARENT_PHONE_EXISTS'; conflict.existingParent = { id: existing.id, name: existing.name, phone: existing.phone }; throw conflict; }
           const parent = await tx.parent.create({ data: { name: guardian.parent.name.trim(), phone, email: guardian.parent.email?.trim() || null, dateOfBirth: guardian.parent.dateOfBirth ? new Date(guardian.parent.dateOfBirth) : null } }); parentId = parent.id;
         } else { const parent = await tx.parent.findUnique({ where: { id: parentId } }); if (!parent) throw new Error('Orang tua yang dipilih tidak ditemukan.'); }
+        if (links.some((link) => link.parentId === parentId)) throw new Error('Orang tua/wali yang sama tidak dapat ditambahkan dua kali.');
         links.push({ parentId, relation, isPrimary: Boolean(guardian.isPrimary) });
       }
       const primary = links.some((l) => l.isPrimary) ? links : links.map((l, i) => ({ ...l, isPrimary: i === 0 }));
@@ -39,5 +40,5 @@ export async function POST(req: Request) {
       return student;
     });
     return NextResponse.json(result, { status: 201 });
-  } catch (e) { return errorResponse(e); }
+  } catch (e: any) { if (e?.code === 'PARENT_PHONE_EXISTS') return NextResponse.json({ code: e.code, message: e.message, existingParent: e.existingParent }, { status: 409 }); return errorResponse(e); }
 }
