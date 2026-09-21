@@ -19,7 +19,9 @@ enum StudentStatus {
 }
 
 enum BillStatus {
-  ACTIVE
+  UNPAID
+  PARTIAL
+  PAID
   CANCELLED
 }
 
@@ -53,17 +55,18 @@ enum NotificationStatus {
 }
 
 model SchoolSetting {
-  id              Int      @id @default(1)
-  schoolName      String   @default("PAUD Cerdas Ceria")
-  schoolAddress   String?
-  schoolPhone     String?
-  schoolEmail     String?
-  logoUrl         String?
-  receiptPrefix   String   @default("KW")
-  receiptSequence Int      @default(0)
-  timezone        String   @default("Asia/Jakarta")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               Int      @id @default(1)
+  schoolName       String   @default("PAUD Cerdas Ceria")
+  schoolAddress    String?
+  schoolPhone      String?
+  schoolEmail      String?
+  logoUrl          String?
+  receiptPrefix    String   @default("KW")
+  receiptSequence  Int      @default(0)
+  defaultSppAmount Decimal? @db.Decimal(14, 2)
+  timezone         String   @default("Asia/Jakarta")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model User {
@@ -155,16 +158,17 @@ model Parent {
 }
 
 model Student {
-  id          String        @id @default(cuid())
-  nis         String        @unique
-  name        String
-  dateOfBirth DateTime
-  gender      String?
-  status      StudentStatus @default(ACTIVE)
-  classRoomId String
-  notes       String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  nis             String        @unique
+  name            String
+  dateOfBirth     DateTime
+  gender          String?
+  status          StudentStatus @default(ACTIVE)
+  classRoomId     String
+  notes           String?
+  customSppAmount Decimal?      @db.Decimal(14, 2)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   classRoom ClassRoom            @relation(fields: [classRoomId], references: [id])
   parents   StudentParent[]
@@ -189,29 +193,33 @@ model StudentParent {
 }
 
 model Bill {
-  id           String     @id @default(cuid())
-  studentId    String
-  classRoomId  String?
-  createdById  String
-  code         String     @unique
-  title        String
-  description  String?
-  periodLabel  String?
-  periodStart  DateTime?
-  periodEnd    DateTime?
-  dueDate      DateTime?
-  amount       Decimal    @db.Decimal(14, 2)
-  status       BillStatus @default(ACTIVE)
-  cancelledAt  DateTime?
-  cancelReason String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id             String     @id @default(cuid())
+  studentId      String
+  classRoomId    String?
+  createdById    String
+  code           String     @unique
+  title          String
+  description    String?
+  periodLabel    String?
+  billingMonth   Int?
+  billingYear    Int?
+  originalAmount Decimal?   @db.Decimal(14, 2)
+  periodStart    DateTime?
+  periodEnd      DateTime?
+  dueDate        DateTime?
+  amount         Decimal    @db.Decimal(14, 2)
+  status         BillStatus @default(UNPAID)
+  cancelledAt    DateTime?
+  cancelReason   String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
   student     Student             @relation(fields: [studentId], references: [id])
   classRoom   ClassRoom?          @relation(fields: [classRoomId], references: [id])
   createdBy   User                @relation(fields: [createdById], references: [id])
   allocations PaymentAllocation[]
 
+  @@unique([studentId, billingMonth, billingYear])
   @@index([studentId, status])
   @@index([periodStart, periodEnd])
 }
