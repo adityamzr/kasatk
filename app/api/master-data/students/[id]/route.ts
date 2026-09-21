@@ -1,6 +1,3 @@
-export const dynamic = 'force-dynamic';
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { requirePermission, errorResponse } from '@/lib/api';
-export async function PATCH(req:Request,{params}:{params:{id:string}}){const denied=await requirePermission('students.manage');if(denied)return denied;try{const b=await req.json();const item=await prisma.student.update({where:{id:params.id},data:{nis:b.nis?.trim(),name:b.name?.trim(),dateOfBirth:b.dateOfBirth?new Date(b.dateOfBirth):undefined,classRoomId:b.classRoomId,gender:b.gender?.trim()||null,notes:b.notes?.trim()||null,status:b.status}});return NextResponse.json(item)}catch(e){return errorResponse(e)}}
-export async function DELETE(_req:Request,{params}:{params:{id:string}}){const denied=await requirePermission('students.manage');if(denied)return denied;try{return NextResponse.json(await prisma.student.update({where:{id:params.id},data:{status:'INACTIVE'}}))}catch(e){return errorResponse(e)}}
+export const dynamic='force-dynamic';
+import {NextResponse} from 'next/server'; import {prisma} from '@/lib/prisma'; import {requirePermission,errorResponse} from '@/lib/api';
+export async function GET(_r:Request,{params}:{params:{id:string}}){const d=await requirePermission('students.manage');if(d)return d;try{const s=await prisma.student.findUnique({where:{id:params.id},include:{classRoom:true,parents:{include:{parent:true}},bills:{include:{allocations:{where:{payment:{status:'COMPLETED'}},select:{amount:true}}},orderBy:{billingYear:'desc'}}}});if(!s)return NextResponse.json({message:'Siswa tidak ditemukan.'},{status:404});return NextResponse.json({...s,bills:s.bills.map(b=>({...b,amount:b.amount.toString(),paidAmount:b.allocations.reduce((n,a)=>n+Number(a.amount),0)}))})}catch(e){return errorResponse(e)}}
