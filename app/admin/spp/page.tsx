@@ -875,7 +875,7 @@ function BulkPaymentModal({
           />
         </label>
         <div className="bulk-actions">
-          <button className="back-link" onClick={close} disabled={busy}>
+          <button className="secondary" onClick={close} disabled={busy}>
             Batal
           </button>
           <button className="primary" onClick={submit} disabled={busy}>
