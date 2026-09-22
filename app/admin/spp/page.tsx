@@ -1,18 +1,3 @@
-"use client";
-import { formatRupiah } from "@/lib/money";
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import MoneyInput from "@/components/ui/MoneyInput";
-import {
-  ArrowRight,
-  Check,
-  CreditCard,
-  LoaderCircle,
-  Plus,
-  X,
-} from "lucide-react";
-import { useToast } from "@/components/ui/toast";
-
 const months = [
   "Januari",
   "Februari",
@@ -290,7 +275,7 @@ export default function SppPage() {
               )}
             </div>
             <div className="spp-table">
-              <div className="spp-tr spp-th">
+              <div className="spp-tr billing-row spp-th">
                 <span className="bulk-check">
                   <input
                     type="checkbox"
@@ -318,7 +303,7 @@ export default function SppPage() {
                 </div>
               ) : (
                 bills.map((b) => (
-                  <div className="spp-tr" key={b.id}>
+                  <div className="spp-tr billing-row" key={b.id}>
                     <span className="bulk-check">
                       <input
                         type="checkbox"
@@ -714,7 +699,7 @@ function Payments() {
         </div>
       </div>
       <div className="spp-table">
-        <div className="spp-tr spp-th">
+        <div className="spp-tr payment-history-row spp-th payment-history-header">
           <span>NO. KUITANSI</span>
           <span>SISWA</span>
           <span>TANGGAL</span>
@@ -724,7 +709,7 @@ function Payments() {
         </div>
         {items.length ? (
           items.map((p) => (
-            <div className="spp-tr" key={p.id}>
+            <div className="spp-tr payment-history-row" key={p.id}>
               <span>{p.receipt?.receiptNumber || p.paymentNumber}</span>
               <span>{p.student.name}</span>
               <span>{new Date(p.paymentDate).toLocaleDateString("id-ID")}</span>
