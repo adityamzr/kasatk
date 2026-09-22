@@ -8,7 +8,7 @@ export async function GET(req: Request) {
   const denied = await requirePermission('students.manage'); if (denied) return denied;
   try { const url = new URL(req.url); const search = url.searchParams.get('search')?.trim(); const classRoomId = url.searchParams.get('classRoomId') || undefined; const status = url.searchParams.get('status') as any || undefined;
     return NextResponse.json(await prisma.student.findMany({ where: { ...(search ? { OR: [{ name: { contains: search, mode: 'insensitive' } }, { nis: { contains: search, mode: 'insensitive' } }] } : {}), ...(classRoomId ? { classRoomId } : {}), ...(status ? { status } : {}) }, orderBy: { name: 'asc' }, include: { classRoom: true, parents: { include: { parent: true } } } }));
-  } catch (e: any) { if (e?.code === 'PARENT_PHONE_EXISTS') return NextResponse.json({ code: e.code, message: e.message, existingParent: e.existingParent }, { status: 409 }); return errorResponse(e); }
+  } catch (e: any) { if (e?.code === 'PARENT_PHONE_EXISTS') return NextResponse.json({ code: e.code, message: e.message, guardianClientId: e.guardianClientId, existingParent: e.existingParent }, { status: 409 }); return errorResponse(e); }
 }
 
 export async function POST(req: Request) {
@@ -40,5 +40,5 @@ export async function POST(req: Request) {
       return student;
     });
     return NextResponse.json(result, { status: 201 });
-  } catch (e: any) { if (e?.code === 'PARENT_PHONE_EXISTS') return NextResponse.json({ code: e.code, message: e.message, existingParent: e.existingParent }, { status: 409 }); return errorResponse(e); }
+  } catch (e: any) { if (e?.code === 'PARENT_PHONE_EXISTS') return NextResponse.json({ code: e.code, message: e.message, guardianClientId: e.guardianClientId, existingParent: e.existingParent }, { status: 409 }); return errorResponse(e); }
 }
