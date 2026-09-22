@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { requirePermission, errorResponse } from '@/lib/api';
 export async function GET() {
@@ -13,8 +14,8 @@ export async function GET() {
       prisma.bill.findMany({ where: { status: { in: ['UNPAID', 'PARTIAL'] } }, select: { amount: true, allocations: { where: { payment: { status: 'COMPLETED' } }, select: { amount: true } } } }),
       prisma.student.findMany({ select: { savings: { where: { status: 'COMPLETED' }, orderBy: [{ transactionDate: 'desc' }, { createdAt: 'desc' }], take: 1, select: { balanceAfter: true } } } }),
     ]);
-    const arrears = openBills.reduce((sum, bill) => sum + Math.max(0, Number(bill.amount) - bill.allocations.reduce((n, item) => n + Number(item.amount), 0)), 0);
-    const totalSavingsBalance = savingsStudents.reduce((sum, student) => sum + Number(student.savings[0]?.balanceAfter ?? 0), 0);
-    return NextResponse.json({ activeStudents, cashInThisMonth: Number(payments._sum.amount ?? 0), totalArrears: arrears, totalSavingsBalance });
+    const arrears = openBills.reduce((sum, bill) => { const paid = bill.allocations.reduce((n, item) => n.add(item.amount), new Prisma.Decimal(0)); const outstanding = bill.amount.sub(paid); return sum.add(outstanding.greaterThan(0) ? outstanding : new Prisma.Decimal(0)); }, new Prisma.Decimal(0));
+    const totalSavingsBalance = savingsStudents.reduce((sum, student) => sum.add(student.savings[0]?.balanceAfter ?? new Prisma.Decimal(0)), new Prisma.Decimal(0));
+    return NextResponse.json({ activeStudents, cashInThisMonth: Number(payments._sum.amount ?? 0), totalArrears: arrears.toString(), totalSavingsBalance: totalSavingsBalance.toString() });
   } catch (error) { return errorResponse(error); }
 }
