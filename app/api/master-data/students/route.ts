@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { requirePermission, errorResponse } from '@/lib/api';
 import { normalizePhone } from '@/lib/phone';
@@ -15,6 +16,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json(); const s = body.student ?? body; const guardians = body.guardians ?? (body.parentId ? [{ type: 'existing', parentId: body.parentId, relation: body.relation, isPrimary: true }] : []);
     if (!s.nis?.trim() || !s.name?.trim() || !s.dateOfBirth || !s.classRoomId) return NextResponse.json({ message: 'NIS, nama, tanggal lahir, dan kelas wajib diisi.' }, { status: 400 });
+    if (s.customSppAmount !== null && s.customSppAmount !== undefined && s.customSppAmount !== '' && !((typeof s.customSppAmount === 'number' && Number.isInteger(s.customSppAmount) && s.customSppAmount > 0) || (typeof s.customSppAmount === 'string' && /^[1-9]\d*$/.test(s.customSppAmount)))) return NextResponse.json({ message: 'Nominal SPP khusus harus berupa angka rupiah tanpa format.' }, { status: 400 });
     if (!Array.isArray(guardians) || guardians.length === 0) return NextResponse.json({ message: 'Tambahkan minimal satu orang tua/wali.' }, { status: 400 });
     if (guardians.filter((g: any) => g.isPrimary).length > 1) return NextResponse.json({ message: 'Hanya boleh ada satu kontak utama.' }, { status: 400 });
     const user = await (await import('@/lib/auth')).getCurrentUser(); if (!user) return NextResponse.json({ message: 'Sesi login tidak ditemukan.' }, { status: 401 });
@@ -34,7 +36,7 @@ export async function POST(req: Request) {
         links.push({ parentId, relation, isPrimary: Boolean(guardian.isPrimary) });
       }
       const primary = links.some((l) => l.isPrimary) ? links : links.map((l, i) => ({ ...l, isPrimary: i === 0 }));
-      const student = await tx.student.create({ data: { nis: s.nis.trim(), name: s.name.trim(), dateOfBirth: new Date(s.dateOfBirth), gender: s.gender?.trim() || null, classRoomId: s.classRoomId, notes: s.notes?.trim() || null, customSppAmount: s.customSppAmount ? Number(s.customSppAmount) : null, parents: { create: primary } }, include: { classRoom: true, parents: { include: { parent: true } } } });
+      const student = await tx.student.create({ data: { nis: s.nis.trim(), name: s.name.trim(), dateOfBirth: new Date(s.dateOfBirth), gender: s.gender?.trim() || null, classRoomId: s.classRoomId, notes: s.notes?.trim() || null, customSppAmount: s.customSppAmount === null || s.customSppAmount === undefined || s.customSppAmount === '' ? null : new Prisma.Decimal(s.customSppAmount), parents: { create: primary } }, include: { classRoom: true, parents: { include: { parent: true } } } });
       await tx.auditLog.create({ data: { userId: user.id, action: 'CREATE_STUDENT', entity: 'Student', entityId: student.id, afterData: { nis: student.nis, name: student.name, guardians: primary } } });
       return student;
     });
