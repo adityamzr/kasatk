@@ -1,3 +1,6 @@
+"use client";
+import{formatRupiah}from"@/lib/money";import Link from"next/link";import{useEffect,useState}from"react";import MoneyInput from"@/components/ui/MoneyInput";import{ArrowRight,Check,CreditCard,LoaderCircle,Plus,X}from"lucide-react";import{useToast}from"@/components/ui/toast";
+
 const months = [
   "Januari",
   "Februari",
