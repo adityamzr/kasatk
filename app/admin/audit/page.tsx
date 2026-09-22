@@ -1,2 +1,158 @@
-'use client';import{useEffect,useState}from'react';import{RefreshCw,LoaderCircle}from'lucide-react';import{formatDateTimeID}from'@/lib/date';
-export default function Audit(){const[items,setItems]=useState<any[]>([]),[filters,setFilters]=useState({from:'',to:'',action:'',entity:''}),[page,setPage]=useState(1),[meta,setMeta]=useState<any>({}),[loading,setLoading]=useState(true),[error,setError]=useState('');async function load(){setLoading(true);const q=new URLSearchParams({...filters,page:String(page),pageSize:'25'});for(const k of Object.keys(filters))if(!q.get(k))q.delete(k);try{const r=await fetch('/api/reports/audit?'+q);const d=await r.json();if(!r.ok)throw Error(d.message);setItems(d.items||[]);setMeta(d.pagination||{})}catch(e:any){setError(e.message)}finally{setLoading(false)}}useEffect(()=>{load()},[filters,page]);useEffect(()=>setPage(1),[filters]);return <div className="section-page"><div className="page-title"><div><p className="eyebrow">SISTEM</p><h1>Audit Aktivitas</h1><p className="muted">Lihat riwayat perubahan dan aktivitas penting pada sistem.</p></div><button className="secondary" onClick={load} disabled={loading}><RefreshCw size={15} className={loading?'loading-spinner':''}/> Segarkan</button></div><section className="panel report-filters"><div className="form-grid"><label>Dari tanggal<input type="date" value={filters.from} onChange={e=>setFilters(x=>({...x,from:e.target.value}))}/></label><label>Sampai tanggal<input type="date" value={filters.to} onChange={e=>setFilters(x=>({...x,to:e.target.value}))}/></label><label>Aksi<input value={filters.action} onChange={e=>setFilters(x=>({...x,action:e.target.value}))}/></label><label>Entitas<input value={filters.entity} onChange={e=>setFilters(x=>({...x,entity:e.target.value}))}/></label></div></section><section className="panel report-table">{error?<div className="error">{error}</div>:loading?<div className="empty"><LoaderCircle className="loading-spinner"/> Memuat aktivitas...</div>:!items.length?<div className="empty">Belum ada aktivitas.</div>:<><div className="report-table-scroll"><table><thead><tr><th>WAKTU</th><th>PENGGUNA</th><th>AKSI</th><th>ENTITAS</th><th>REFERENSI</th></tr></thead><tbody>{items.map(x=><tr key={x.id}><td>{formatDateTimeID(x.createdAt)}</td><td>{x.user}</td><td>{x.action}</td><td>{x.entity}</td><td>{x.entityId||'-'}</td></tr>)}</tbody></table></div>{meta.totalPages>1&&<div className="pagination"><span>{(page-1)*meta.pageSize+1}–{Math.min(page*meta.pageSize,meta.total)} dari {meta.total}</span><button disabled={page<=1} onClick={()=>setPage(page-1)}>Sebelumnya</button><b>{page} / {meta.totalPages}</b><button disabled={page>=meta.totalPages} onClick={()=>setPage(page+1)}>Berikutnya</button></div>}</>}</section></div>}
+"use client";
+import { useEffect, useState } from "react";
+import { RefreshCw, LoaderCircle } from "lucide-react";
+import { formatDateTimeID } from "@/lib/date";
+export default function Audit() {
+  const [items, setItems] = useState<any[]>([]),
+    [filters, setFilters] = useState({
+      from: "",
+      to: "",
+      action: "",
+      entity: "",
+    }),
+    [page, setPage] = useState(1),
+    [meta, setMeta] = useState<any>({}),
+    [loading, setLoading] = useState(true),
+    [error, setError] = useState("");
+  async function load() {
+    setLoading(true);
+    const q = new URLSearchParams({
+      ...filters,
+      page: String(page),
+      pageSize: "25",
+    });
+    for (const k of Object.keys(filters)) if (!q.get(k)) q.delete(k);
+    try {
+      const r = await fetch("/api/reports/audit?" + q);
+      const d = await r.json();
+      if (!r.ok) throw Error(d.message);
+      setItems(d.items || []);
+      setMeta(d.pagination || {});
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => {
+    load();
+  }, [filters, page]);
+  useEffect(() => setPage(1), [filters]);
+  return (
+    <div className="section-page">
+      <div className="page-title">
+        <div>
+          <p className="eyebrow">SISTEM</p>
+          <h1>Audit Aktivitas</h1>
+          <p className="muted">
+            Lihat riwayat perubahan dan aktivitas penting pada sistem.
+          </p>
+        </div>
+        <button className="secondary" onClick={load} disabled={loading}>
+          <RefreshCw size={15} className={loading ? "loading-spinner" : ""} />{" "}
+          Refresh
+        </button>
+      </div>
+      <section className="panel report-filters">
+        <div className="form-grid">
+          <label>
+            Dari tanggal
+            <input
+              type="date"
+              value={filters.from}
+              onChange={(e) =>
+                setFilters((x) => ({ ...x, from: e.target.value }))
+              }
+            />
+          </label>
+          <label>
+            Sampai tanggal
+            <input
+              type="date"
+              value={filters.to}
+              onChange={(e) =>
+                setFilters((x) => ({ ...x, to: e.target.value }))
+              }
+            />
+          </label>
+          <label>
+            Aksi
+            <input
+              value={filters.action}
+              onChange={(e) =>
+                setFilters((x) => ({ ...x, action: e.target.value }))
+              }
+            />
+          </label>
+          <label>
+            Entitas
+            <input
+              value={filters.entity}
+              onChange={(e) =>
+                setFilters((x) => ({ ...x, entity: e.target.value }))
+              }
+            />
+          </label>
+        </div>
+      </section>
+      <section className="panel report-table">
+        {error ? (
+          <div className="error">{error}</div>
+        ) : loading ? (
+          <div className="empty">
+            <LoaderCircle className="loading-spinner" /> Memuat aktivitas...
+          </div>
+        ) : !items.length ? (
+          <div className="empty">Belum ada aktivitas.</div>
+        ) : (
+          <>
+            <div className="report-table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>WAKTU</th>
+                    <th>PENGGUNA</th>
+                    <th>AKSI</th>
+                    <th>ENTITAS</th>
+                    <th>REFERENSI</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((x) => (
+                    <tr key={x.id}>
+                      <td>{formatDateTimeID(x.createdAt)}</td>
+                      <td>{x.user}</td>
+                      <td>{x.action}</td>
+                      <td>{x.entity}</td>
+                      <td>{x.entityId || "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {meta.totalPages > 1 && (
+              <div className="pagination">
+                <span>
+                  {(page - 1) * meta.pageSize + 1}–
+                  {Math.min(page * meta.pageSize, meta.total)} dari {meta.total}
+                </span>
+                <button disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                  Sebelumnya
+                </button>
+                <b>
+                  {page} / {meta.totalPages}
+                </b>
+                <button
+                  disabled={page >= meta.totalPages}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Berikutnya
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </section>
+    </div>
+  );
+}
