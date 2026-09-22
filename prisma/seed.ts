@@ -11,6 +11,7 @@ const permissions = [
   ['savings.manage', 'Mencatat dan mengelola tabungan'],
   ['reports.view', 'Melihat dan mengekspor laporan'],
   ['users.manage', 'Mengelola pengguna dan permission'],
+  ['settings.manage', 'Mengelola pengaturan sekolah'],
   ['transactions.cancel', 'Membatalkan transaksi'],
 ];
 
