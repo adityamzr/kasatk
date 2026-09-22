@@ -1,13 +1,907 @@
-'use client';import{formatRupiah}from'@/lib/money';
-import Link from 'next/link';import { useEffect, useState } from 'react';import MoneyInput from '@/components/ui/MoneyInput';
-import { ArrowRight, Check, CreditCard, LoaderCircle, Plus, X } from 'lucide-react';import { useToast } from '@/components/ui/toast';
+"use client";
+import { formatRupiah } from "@/lib/money";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import MoneyInput from "@/components/ui/MoneyInput";
+import {
+  ArrowRight,
+  Check,
+  CreditCard,
+  LoaderCircle,
+  Plus,
+  X,
+} from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 
-const months=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-export default function SppPage(){const [bills,setBills]=useState<any[]>([]),[classes,setClasses]=useState<any[]>([]),[summary,setSummary]=useState<any>({}),[tab,setTab]=useState<'bills'|'payments'>('bills'),[loading,setLoading]=useState(true),[page,setPage]=useState(1),[meta,setMeta]=useState<any>({}),[message,setMessage]=useState(''),[filters,setFilters]=useState({year:String(new Date().getFullYear()),month:'',classRoomId:'',search:'',status:''}),[generator,setGenerator]=useState(false),[preflight,setPreflight]=useState<any>(null),[generateBusy,setGenerateBusy]=useState(false),[paying,setPaying]=useState<any>(null),[bulkOpen,setBulkOpen]=useState(false),[selectedBulk,setSelectedBulk]=useState<Record<string,boolean>>({}),[debouncedSearch,setDebouncedSearch]=useState('');const toast=useToast();async function load(){setLoading(true);const q=new URLSearchParams(Object.entries({...filters,search:debouncedSearch,page:String(page),pageSize:'25'}).filter(([,v])=>v));const [b,c]=await Promise.all([fetch('/api/billing?'+q),fetch('/api/master-data/classes')]);if(b.ok){const d=await b.json();setBills(d.items);setMeta(d.pagination||{});setSummary(d.summary)}if(c.ok)setClasses(await c.json());setLoading(false)}useEffect(()=>{if(!generator)return;const formYear=String(new Date().getFullYear());const formMonth=String(new Date().getMonth()+1);setPreflight(null);fetch(`/api/billing/generate?year=${formYear}&month=${formMonth}`).then(r=>r.ok?r.json():null).then(setPreflight).catch(()=>setPreflight(null))},[generator]);useEffect(()=>{const timer=setTimeout(()=>setDebouncedSearch(filters.search),350);return()=>clearTimeout(timer)},[filters.search]);useEffect(()=>{load()},[filters.year,filters.month,filters.classRoomId,filters.status,debouncedSearch,page]);useEffect(()=>setPage(1),[filters.year,filters.month,filters.classRoomId,filters.status,debouncedSearch]);useEffect(()=>setSelectedBulk({}),[filters.year,filters.month,filters.classRoomId,filters.status,debouncedSearch,page]);const eligibleBills=bills.filter(b=>b.status==='UNPAID'||b.status==='PARTIAL');const selectedBills=bills.filter(b=>selectedBulk[b.id]&&(b.status==='UNPAID'||b.status==='PARTIAL'));function toggleBulk(id:string,checked:boolean){setSelectedBulk(x=>({...x,[id]:checked}))}function selectAllBulk(checked:boolean){setSelectedBulk(Object.fromEntries(eligibleBills.map(b=>[b.id,checked])))}async function generate(e:React.FormEvent<HTMLFormElement>){e.preventDefault();if(generateBusy)return;setGenerateBusy(true);const f=new FormData(e.currentTarget);try{const r=await fetch('/api/billing/generate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(Object.fromEntries(f.entries()))});const d=await r.json();if(!r.ok)throw Error(d.message||'Gagal membuat tagihan');setMessage('');toast.success(`Berhasil membuat ${d.generated} tagihan. ${d.skipped} tagihan dilewati karena sudah ada.`);setGenerator(false);await load()}catch(e:any){setMessage('');toast.error(e.message)}finally{setGenerateBusy(false)}}return <main className="spp-shell"><div className="spp-header"><div><p className="eyebrow">KEUANGAN SEKOLAH</p><h1>SPP & Tagihan</h1><p className="muted">Kelola tagihan SPP bulanan dan pembayaran siswa.</p></div><div className="spp-actions"><button className="primary" onClick={()=>setGenerator(true)}><Plus size={16} aria-hidden="true"/> Generate tagihan</button></div></div>{message&&<div className="notice spp-notice">{message}<button aria-label="Tutup notifikasi" onClick={()=>setMessage('')}><X size={16} aria-hidden="true"/></button></div>}<div className="spp-tabs"><button className={tab==='bills'?'selected':''} onClick={()=>setTab('bills')}>Daftar tagihan</button><button className={tab==='payments'?'selected':''} onClick={()=>setTab('payments')}>Riwayat pembayaran</button></div>{tab==='bills'?<><div className="spp-summary"><Card label="Total tagihan" value={formatRupiah(summary.totalBill||0)} tone="blue"/><Card label="Sudah dibayar" value={formatRupiah(summary.paid||0)} tone="green"/><Card label="Belum dibayar" value={formatRupiah(summary.unpaid||0)} tone="red"/><Card label="Jumlah ditampilkan" value={String(meta.total??0)} tone="yellow"/></div><section className="panel spp-panel"><div className="filter-row"><input placeholder="Cari nama siswa..." value={filters.search} onChange={e=>setFilters({...filters,search:e.target.value})}/><select value={filters.classRoomId} onChange={e=>setFilters({...filters,classRoomId:e.target.value})}><option value="">Semua kelas</option>{classes.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select><select value={filters.year} onChange={e=>setFilters({...filters,year:e.target.value})}><option>{new Date().getFullYear()-1}</option><option>{new Date().getFullYear()}</option><option>{new Date().getFullYear()+1}</option></select><select value={filters.month} onChange={e=>setFilters({...filters,month:e.target.value})}><option value="">Semua bulan</option>{months.map((m,i)=><option key={m} value={i+1}>{m}</option>)}</select><select value={filters.status} onChange={e=>setFilters({...filters,status:e.target.value})}><option value="">Semua status</option><option value="UNPAID">Belum dibayar</option><option value="PARTIAL">Sebagian</option><option value="PAID">Lunas</option></select></div><div className="bulk-bar">{selectedBills.length>0&&<><span>{selectedBills.length} tagihan dipilih</span><button className="primary" onClick={()=>setBulkOpen(true)}><CreditCard size={15}/> Bayar Terpilih</button></>}</div><div className="spp-table"><div className="spp-tr spp-th"><span className="bulk-check"><input type="checkbox" aria-label="Pilih semua tagihan yang dapat dibayar" checked={eligibleBills.length>0&&eligibleBills.every(b=>selectedBulk[b.id])} onChange={e=>selectAllBulk(e.target.checked)}/></span><span>SISWA</span><span>PERIODE</span><span>TAGIHAN</span><span>DIBAYAR</span><span>STATUS</span><span>AKSI</span></div>{loading?<div className="empty">Memuat data...</div>:bills.length===0?<div className="empty">Belum ada tagihan. Gunakan tombol Generate tagihan untuk memulai.</div>:bills.map(b=><div className="spp-tr" key={b.id}><span className="bulk-check"><input type="checkbox" aria-label={`Pilih tagihan ${b.student.name}`} disabled={b.status!=='UNPAID'&&b.status!=='PARTIAL'} checked={!!selectedBulk[b.id]} onChange={e=>toggleBulk(b.id,e.target.checked)}/></span><span className="student"><b className="mini blue">{b.student.name.slice(0,2).toUpperCase()}</b><strong>{b.student.name}<small>{b.student.nis} · {b.student.classRoom.name}</small></strong></span><span>{b.periodLabel||'-'}</span><span className="amount">{formatRupiah(Number(b.amount))}</span><span>{formatRupiah(b.paidAmount||0)}</span><span><Status status={b.status}/></span><span><button className="pay-btn" disabled={b.status==='PAID'||b.status==='CANCELLED'} onClick={()=>setPaying(b)}>Bayar</button></span></div>)}</div>{meta.totalPages>1&&<div className="pagination"><span>{(page-1)*meta.pageSize+1}–{Math.min(page*meta.pageSize,meta.total)} dari {meta.total}</span><button disabled={page<=1} onClick={()=>setPage(page-1)}>Sebelumnya</button><b>{page} / {meta.totalPages}</b><button disabled={page>=meta.totalPages} onClick={()=>setPage(page+1)}>Berikutnya</button></div>}</section></>:<Payments/>}{generator&&<Modal title="Generate tagihan SPP" close={()=>setGenerator(false)}><form className="modal-form" onSubmit={generate}><label>Tahun<input name="year" type="number" defaultValue={String(new Date().getFullYear())}/></label><label>Bulan<select name="month" defaultValue={String(new Date().getMonth()+1)}>{months.map((m,i)=><option value={i+1} key={m}>{m}</option>)}</select></label><div className="generate-preview"><div className="generate-preview-row"><span>Nominal SPP default</span><b>{preflight?.defaultSppAmount?formatRupiah(Number(preflight.defaultSppAmount)):'Belum diatur'}</b></div><div className="generate-preview-row"><span>Siswa aktif</span><b>{preflight?`${preflight.targetStudents} siswa`:'Memuat...'}</b></div><div className="generate-preview-row"><span>Sudah memiliki tagihan</span><b>{preflight?`${preflight.existingBills} siswa`:'Memuat...'}</b></div>{preflight?.missingConfiguration>0&&<div className="error">Nominal SPP belum dikonfigurasi. Beberapa siswa belum memiliki nominal SPP khusus dan nominal default sekolah belum diatur.<Link href="/admin/settings">Atur nominal SPP</Link></div>}</div><label>Kelas<select name="classRoomId" defaultValue=""><option value="">Semua siswa aktif</option>{classes.map(c=><option value={c.id} key={c.id}>{c.name}</option>)}</select></label><button className="primary" disabled={generateBusy||!preflight||preflight.missingConfiguration>0} aria-busy={generateBusy}>{generateBusy?<><LoaderCircle className="loading-spinner" size={16}/> Memproses...</>:'Generate sekarang'}</button></form></Modal>}{bulkOpen&&<BulkPaymentModal bills={selectedBills} close={()=>setBulkOpen(false)} done={(m)=>{setBulkOpen(false);setSelectedBulk({});toast.success(m);load()}}/>}{paying&&<PaymentModal bill={paying} close={()=>setPaying(null)} done={(m)=>{setPaying(null);toast.success(m);load()}}/>}</main>}
-function Card({label,value,tone}:{label:string,value:string,tone:string}){return <div className="spp-card"><span className={'card-dot '+tone}/><p>{label}</p><b>{value}</b></div>}
-function Status({status}:{status:string}){const label=status==='PAID'?'Lunas':status==='PARTIAL'?'Sebagian':status==='CANCELLED'?'Dibatalkan':'Belum dibayar';return <span className={'bill-status '+status.toLowerCase()}>{label}</span>}
-function Modal({title,close,children}:{title:string;close:()=>void;children:React.ReactNode}){return <div className="modal-backdrop" onMouseDown={close}><div className="modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><h2>{title}</h2><button aria-label="Tutup" onClick={close}><X size={18} aria-hidden="true"/></button></div>{children}</div></div>}
-function PaymentModal({bill,close,done}:{bill:any;close:()=>void;done:(m:string)=>void}){const [method,setMethod]=useState('CASH'),[openBills,setOpenBills]=useState<any[]>([bill]),[selected,setSelected]=useState<Record<string,boolean>>({[bill.id]:true}),[amounts,setAmounts]=useState<Record<string,string>>({[bill.id]:String(Number(bill.amount)-Number(bill.paidAmount||0))}),[busy,setBusy]=useState(false),[error,setError]=useState('');const toast=useToast();useEffect(()=>{fetch(`/api/billing?studentId=${bill.student.id}`).then(r=>r.ok?r.json():null).then(d=>{if(!d)return;const available=d.items.filter((x:any)=>x.status!=='PAID'&&x.status!=='CANCELLED');setOpenBills(available);setSelected(Object.fromEntries(available.map((x:any)=>[x.id,x.id===bill.id])));setAmounts(Object.fromEntries(available.map((x:any)=>[x.id,String(Number(x.amount)-Number(x.paidAmount||0))])))})},[bill.id,bill.student.id]);const selectedBills=openBills.filter(x=>selected[x.id]);const total=selectedBills.reduce((sum,x)=>sum+Number(amounts[x.id]||0),0);async function save(){if(busy)return;setBusy(true);setError('');try{const r=await fetch('/api/payments',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({studentId:bill.student.id,method,allocations:selectedBills.map(x=>({billId:x.id,amount:Number(amounts[x.id])}))})});const d=await r.json();if(!r.ok)throw Error(d.message||'Pembayaran gagal.');done(`Pembayaran ${d.receiptNumber} berhasil disimpan.`)}catch(e:any){setError(e.message);toast.error(e.message)}finally{setBusy(false)}}return <Modal title="Bayar SPP" close={close}><div className="payment-student"><b>{bill.student.name}</b><span>{bill.student.classRoom.name} · pilih satu atau beberapa periode</span></div><div className="bill-picker">{openBills.map(x=><label className="bill-choice" key={x.id}><input type="checkbox" checked={!!selected[x.id]} onChange={e=>setSelected({...selected,[x.id]:e.target.checked})}/><span><b>{x.periodLabel}</b><small>Sisa {formatRupiah(Number(x.amount)-Number(x.paidAmount||0))}</small></span><MoneyInput className="choice-amount" value={amounts[x.id]||''} disabled={!selected[x.id]} onChange={value=>setAmounts({...amounts,[x.id]:value})}/></label>)}</div><div className="pay-breakdown"><span>Total pembayaran</span><b>{formatRupiah(total)}</b></div><label className="field">Metode pembayaran<select value={method} onChange={e=>setMethod(e.target.value)}><option value="CASH">Tunai</option><option value="TRANSFER">Transfer</option></select></label>{error&&<div className="error">{error}</div>}<button className="primary form-submit" onClick={save} disabled={busy||!selectedBills.length||total<=0} aria-busy={busy}>{busy?<><LoaderCircle className="loading-spinner" size={16}/> Menyimpan...</>:'Simpan pembayaran'}</button></Modal>}
-function Payments(){const [items,setItems]=useState<any[]>([]),[page,setPage]=useState(1),[meta,setMeta]=useState<any>({}),[loading,setLoading]=useState(true);useEffect(()=>{setLoading(true);fetch(`/api/payments?page=${page}&pageSize=25`).then(r=>r.ok?r.json():{items:[],pagination:{}}).then(d=>{setItems(d.items||[]);setMeta(d.pagination||{})}).finally(()=>setLoading(false))},[page]);return <section className="panel spp-panel"><div className="panel-head"><div><h2>Riwayat pembayaran</h2><p>Pembayaran SPP yang berhasil dicatat.</p></div></div><div className="spp-table"><div className="spp-tr spp-th"><span>NO. KUITANSI</span><span>SISWA</span><span>TANGGAL</span><span>NOMINAL</span><span>METODE</span><span>OLEH</span></div>{items.length?items.map(p=><div className="spp-tr" key={p.id}><span>{p.receipt?.receiptNumber||p.paymentNumber}</span><span>{p.student.name}</span><span>{new Date(p.paymentDate).toLocaleDateString('id-ID')}</span><span className="amount">{formatRupiah(Number(p.amount))}</span><span>{p.method==='CASH'?'Tunai':'Transfer'}</span><span>{p.recordedBy.name}</span></div>):<div className="empty">Belum ada pembayaran.</div>}{loading&&<div className="empty">Memuat pembayaran...</div>}{meta.totalPages>1&&<div className="pagination"><span>{(page-1)*meta.pageSize+1}–{Math.min(page*meta.pageSize,meta.total)} dari {meta.total}</span><button disabled={page<=1} onClick={()=>setPage(page-1)}>Sebelumnya</button><b>{page} / {meta.totalPages}</b><button disabled={page>=meta.totalPages} onClick={()=>setPage(page+1)}>Berikutnya</button></div>}</div></section>}
+const months = [
+  "Januari",
+  "Februari",
+  "Maret",
+  "April",
+  "Mei",
+  "Juni",
+  "Juli",
+  "Agustus",
+  "September",
+  "Oktober",
+  "November",
+  "Desember",
+];
+export default function SppPage() {
+  const [bills, setBills] = useState<any[]>([]),
+    [classes, setClasses] = useState<any[]>([]),
+    [summary, setSummary] = useState<any>({}),
+    [tab, setTab] = useState<"bills" | "payments">("bills"),
+    [loading, setLoading] = useState(true),
+    [page, setPage] = useState(1),
+    [meta, setMeta] = useState<any>({}),
+    [message, setMessage] = useState(""),
+    [filters, setFilters] = useState({
+      year: String(new Date().getFullYear()),
+      month: "",
+      classRoomId: "",
+      search: "",
+      status: "",
+    }),
+    [generator, setGenerator] = useState(false),
+    [preflight, setPreflight] = useState<any>(null),
+    [generateBusy, setGenerateBusy] = useState(false),
+    [paying, setPaying] = useState<any>(null),
+    [bulkOpen, setBulkOpen] = useState(false),
+    [selectedBulk, setSelectedBulk] = useState<Record<string, boolean>>({}),
+    [debouncedSearch, setDebouncedSearch] = useState("");
+  const toast = useToast();
+  async function load() {
+    setLoading(true);
+    const q = new URLSearchParams(
+      Object.entries({
+        ...filters,
+        search: debouncedSearch,
+        page: String(page),
+        pageSize: "25",
+      }).filter(([, v]) => v),
+    );
+    const [b, c] = await Promise.all([
+      fetch("/api/billing?" + q),
+      fetch("/api/master-data/classes"),
+    ]);
+    if (b.ok) {
+      const d = await b.json();
+      setBills(d.items);
+      setMeta(d.pagination || {});
+      setSummary(d.summary);
+    }
+    if (c.ok) setClasses(await c.json());
+    setLoading(false);
+  }
+  useEffect(() => {
+    if (!generator) return;
+    const formYear = String(new Date().getFullYear());
+    const formMonth = String(new Date().getMonth() + 1);
+    setPreflight(null);
+    fetch(`/api/billing/generate?year=${formYear}&month=${formMonth}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setPreflight)
+      .catch(() => setPreflight(null));
+  }, [generator]);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(filters.search), 350);
+    return () => clearTimeout(timer);
+  }, [filters.search]);
+  useEffect(() => {
+    load();
+  }, [
+    filters.year,
+    filters.month,
+    filters.classRoomId,
+    filters.status,
+    debouncedSearch,
+    page,
+  ]);
+  useEffect(
+    () => setPage(1),
+    [
+      filters.year,
+      filters.month,
+      filters.classRoomId,
+      filters.status,
+      debouncedSearch,
+    ],
+  );
+  useEffect(
+    () => setSelectedBulk({}),
+    [
+      filters.year,
+      filters.month,
+      filters.classRoomId,
+      filters.status,
+      debouncedSearch,
+      page,
+    ],
+  );
+  const eligibleBills = bills.filter(
+    (b) => b.status === "UNPAID" || b.status === "PARTIAL",
+  );
+  const selectedBills = bills.filter(
+    (b) =>
+      selectedBulk[b.id] && (b.status === "UNPAID" || b.status === "PARTIAL"),
+  );
+  function toggleBulk(id: string, checked: boolean) {
+    setSelectedBulk((x) => ({ ...x, [id]: checked }));
+  }
+  function selectAllBulk(checked: boolean) {
+    setSelectedBulk(
+      Object.fromEntries(eligibleBills.map((b) => [b.id, checked])),
+    );
+  }
+  async function generate(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (generateBusy) return;
+    setGenerateBusy(true);
+    const f = new FormData(e.currentTarget);
+    try {
+      const r = await fetch("/api/billing/generate", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(Object.fromEntries(f.entries())),
+      });
+      const d = await r.json();
+      if (!r.ok) throw Error(d.message || "Gagal membuat tagihan");
+      setMessage("");
+      toast.success(
+        `Berhasil membuat ${d.generated} tagihan. ${d.skipped} tagihan dilewati karena sudah ada.`,
+      );
+      setGenerator(false);
+      await load();
+    } catch (e: any) {
+      setMessage("");
+      toast.error(e.message);
+    } finally {
+      setGenerateBusy(false);
+    }
+  }
+  return (
+    <main className="spp-shell">
+      <div className="spp-header">
+        <div>
+          <p className="eyebrow">KEUANGAN SEKOLAH</p>
+          <h1>SPP & Tagihan</h1>
+          <p className="muted">
+            Kelola tagihan SPP bulanan dan pembayaran siswa.
+          </p>
+        </div>
+        <div className="spp-actions">
+          <button className="primary" onClick={() => setGenerator(true)}>
+            <Plus size={16} aria-hidden="true" /> Generate tagihan
+          </button>
+        </div>
+      </div>
+      {message && (
+        <div className="notice spp-notice">
+          {message}
+          <button aria-label="Tutup notifikasi" onClick={() => setMessage("")}>
+            <X size={16} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+      <div className="spp-tabs">
+        <button
+          className={tab === "bills" ? "selected" : ""}
+          onClick={() => setTab("bills")}
+        >
+          Daftar tagihan
+        </button>
+        <button
+          className={tab === "payments" ? "selected" : ""}
+          onClick={() => setTab("payments")}
+        >
+          Riwayat pembayaran
+        </button>
+      </div>
+      {tab === "bills" ? (
+        <>
+          <div className="spp-summary">
+            <Card
+              label="Total tagihan"
+              value={formatRupiah(summary.totalBill || 0)}
+              tone="blue"
+            />
+            <Card
+              label="Sudah dibayar"
+              value={formatRupiah(summary.paid || 0)}
+              tone="green"
+            />
+            <Card
+              label="Belum dibayar"
+              value={formatRupiah(summary.unpaid || 0)}
+              tone="red"
+            />
+            <Card
+              label="Jumlah ditampilkan"
+              value={String(meta.total ?? 0)}
+              tone="yellow"
+            />
+          </div>
+          <section className="panel spp-panel">
+            <div className="filter-row">
+              <input
+                placeholder="Cari nama siswa..."
+                value={filters.search}
+                onChange={(e) =>
+                  setFilters({ ...filters, search: e.target.value })
+                }
+              />
+              <select
+                value={filters.classRoomId}
+                onChange={(e) =>
+                  setFilters({ ...filters, classRoomId: e.target.value })
+                }
+              >
+                <option value="">Semua kelas</option>
+                {classes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={filters.year}
+                onChange={(e) =>
+                  setFilters({ ...filters, year: e.target.value })
+                }
+              >
+                <option>{new Date().getFullYear() - 1}</option>
+                <option>{new Date().getFullYear()}</option>
+                <option>{new Date().getFullYear() + 1}</option>
+              </select>
+              <select
+                value={filters.month}
+                onChange={(e) =>
+                  setFilters({ ...filters, month: e.target.value })
+                }
+              >
+                <option value="">Semua bulan</option>
+                {months.map((m, i) => (
+                  <option key={m} value={i + 1}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={filters.status}
+                onChange={(e) =>
+                  setFilters({ ...filters, status: e.target.value })
+                }
+              >
+                <option value="">Semua status</option>
+                <option value="UNPAID">Belum dibayar</option>
+                <option value="PARTIAL">Sebagian</option>
+                <option value="PAID">Lunas</option>
+              </select>
+            </div>
+            <div className="bulk-bar">
+              {selectedBills.length > 0 && (
+                <>
+                  <span>{selectedBills.length} tagihan dipilih</span>
+                  <button className="primary" onClick={() => setBulkOpen(true)}>
+                    <CreditCard size={15} /> Bayar Terpilih
+                  </button>
+                </>
+              )}
+            </div>
+            <div className="spp-table">
+              <div className="spp-tr spp-th">
+                <span className="bulk-check">
+                  <input
+                    type="checkbox"
+                    aria-label="Pilih semua tagihan yang dapat dibayar"
+                    checked={
+                      eligibleBills.length > 0 &&
+                      eligibleBills.every((b) => selectedBulk[b.id])
+                    }
+                    onChange={(e) => selectAllBulk(e.target.checked)}
+                  />
+                </span>
+                <span>SISWA</span>
+                <span>PERIODE</span>
+                <span>TAGIHAN</span>
+                <span>DIBAYAR</span>
+                <span>STATUS</span>
+                <span>AKSI</span>
+              </div>
+              {loading ? (
+                <div className="empty">Memuat data...</div>
+              ) : bills.length === 0 ? (
+                <div className="empty">
+                  Belum ada tagihan. Gunakan tombol Generate tagihan untuk
+                  memulai.
+                </div>
+              ) : (
+                bills.map((b) => (
+                  <div className="spp-tr" key={b.id}>
+                    <span className="bulk-check">
+                      <input
+                        type="checkbox"
+                        aria-label={`Pilih tagihan ${b.student.name}`}
+                        disabled={
+                          b.status !== "UNPAID" && b.status !== "PARTIAL"
+                        }
+                        checked={!!selectedBulk[b.id]}
+                        onChange={(e) => toggleBulk(b.id, e.target.checked)}
+                      />
+                    </span>
+                    <span className="student">
+                      <b className="mini blue">
+                        {b.student.name.slice(0, 2).toUpperCase()}
+                      </b>
+                      <strong>
+                        {b.student.name}
+                        <small>
+                          {b.student.nis} · {b.student.classRoom.name}
+                        </small>
+                      </strong>
+                    </span>
+                    <span>{b.periodLabel || "-"}</span>
+                    <span className="amount">
+                      {formatRupiah(Number(b.amount))}
+                    </span>
+                    <span>{formatRupiah(b.paidAmount || 0)}</span>
+                    <span>
+                      <Status status={b.status} />
+                    </span>
+                    <span>
+                      <button
+                        className="pay-btn"
+                        disabled={
+                          b.status === "PAID" || b.status === "CANCELLED"
+                        }
+                        onClick={() => setPaying(b)}
+                      >
+                        Bayar
+                      </button>
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+            {meta.totalPages > 1 && (
+              <div className="pagination">
+                <span>
+                  {(page - 1) * meta.pageSize + 1}–
+                  {Math.min(page * meta.pageSize, meta.total)} dari {meta.total}
+                </span>
+                <button disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                  Sebelumnya
+                </button>
+                <b>
+                  {page} / {meta.totalPages}
+                </b>
+                <button
+                  disabled={page >= meta.totalPages}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Berikutnya
+                </button>
+              </div>
+            )}
+          </section>
+        </>
+      ) : (
+        <Payments />
+      )}
+      {generator && (
+        <Modal title="Generate tagihan SPP" close={() => setGenerator(false)}>
+          <form className="modal-form" onSubmit={generate}>
+            <label>
+              Tahun
+              <input
+                name="year"
+                type="number"
+                defaultValue={String(new Date().getFullYear())}
+              />
+            </label>
+            <label>
+              Bulan
+              <select
+                name="month"
+                defaultValue={String(new Date().getMonth() + 1)}
+              >
+                {months.map((m, i) => (
+                  <option value={i + 1} key={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="generate-preview">
+              <div className="generate-preview-row">
+                <span>Nominal SPP default</span>
+                <b>
+                  {preflight?.defaultSppAmount
+                    ? formatRupiah(Number(preflight.defaultSppAmount))
+                    : "Belum diatur"}
+                </b>
+              </div>
+              <div className="generate-preview-row">
+                <span>Siswa aktif</span>
+                <b>
+                  {preflight
+                    ? `${preflight.targetStudents} siswa`
+                    : "Memuat..."}
+                </b>
+              </div>
+              <div className="generate-preview-row">
+                <span>Sudah memiliki tagihan</span>
+                <b>
+                  {preflight ? `${preflight.existingBills} siswa` : "Memuat..."}
+                </b>
+              </div>
+              {preflight?.missingConfiguration > 0 && (
+                <div className="error">
+                  Nominal SPP belum dikonfigurasi. Beberapa siswa belum memiliki
+                  nominal SPP khusus dan nominal default sekolah belum diatur.
+                  <Link href="/admin/settings">Atur nominal SPP</Link>
+                </div>
+              )}
+            </div>
+            <label>
+              Kelas
+              <select name="classRoomId" defaultValue="">
+                <option value="">Semua siswa aktif</option>
+                {classes.map((c) => (
+                  <option value={c.id} key={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              className="primary"
+              disabled={
+                generateBusy || !preflight || preflight.missingConfiguration > 0
+              }
+              aria-busy={generateBusy}
+            >
+              {generateBusy ? (
+                <>
+                  <LoaderCircle className="loading-spinner" size={16} />{" "}
+                  Memproses...
+                </>
+              ) : (
+                "Generate sekarang"
+              )}
+            </button>
+          </form>
+        </Modal>
+      )}
+      {bulkOpen && (
+        <BulkPaymentModal
+          bills={selectedBills}
+          close={() => setBulkOpen(false)}
+          done={(m) => {
+            setBulkOpen(false);
+            setSelectedBulk({});
+            toast.success(m);
+            load();
+          }}
+        />
+      )}
+      {paying && (
+        <PaymentModal
+          bill={paying}
+          close={() => setPaying(null)}
+          done={(m) => {
+            setPaying(null);
+            toast.success(m);
+            load();
+          }}
+        />
+      )}
+    </main>
+  );
+}
+function Card({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: string;
+}) {
+  return (
+    <div className="spp-card">
+      <span className={"card-dot " + tone} />
+      <p>{label}</p>
+      <b>{value}</b>
+    </div>
+  );
+}
+function Status({ status }: { status: string }) {
+  const label =
+    status === "PAID"
+      ? "Lunas"
+      : status === "PARTIAL"
+        ? "Sebagian"
+        : status === "CANCELLED"
+          ? "Dibatalkan"
+          : "Belum dibayar";
+  return <span className={"bill-status " + status.toLowerCase()}>{label}</span>;
+}
+function Modal({
+  title,
+  close,
+  children,
+}: {
+  title: string;
+  close: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="modal-backdrop" onMouseDown={close}>
+      <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <h2>{title}</h2>
+          <button aria-label="Tutup" onClick={close}>
+            <X size={18} aria-hidden="true" />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+function PaymentModal({
+  bill,
+  close,
+  done,
+}: {
+  bill: any;
+  close: () => void;
+  done: (m: string) => void;
+}) {
+  const [method, setMethod] = useState("CASH"),
+    [openBills, setOpenBills] = useState<any[]>([bill]),
+    [selected, setSelected] = useState<Record<string, boolean>>({
+      [bill.id]: true,
+    }),
+    [amounts, setAmounts] = useState<Record<string, string>>({
+      [bill.id]: String(Number(bill.amount) - Number(bill.paidAmount || 0)),
+    }),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  const toast = useToast();
+  useEffect(() => {
+    fetch(`/api/billing?studentId=${bill.student.id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        const available = d.items.filter(
+          (x: any) => x.status !== "PAID" && x.status !== "CANCELLED",
+        );
+        setOpenBills(available);
+        setSelected(
+          Object.fromEntries(
+            available.map((x: any) => [x.id, x.id === bill.id]),
+          ),
+        );
+        setAmounts(
+          Object.fromEntries(
+            available.map((x: any) => [
+              x.id,
+              String(Number(x.amount) - Number(x.paidAmount || 0)),
+            ]),
+          ),
+        );
+      });
+  }, [bill.id, bill.student.id]);
+  const selectedBills = openBills.filter((x) => selected[x.id]);
+  const total = selectedBills.reduce(
+    (sum, x) => sum + Number(amounts[x.id] || 0),
+    0,
+  );
+  async function save() {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const r = await fetch("/api/payments", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          studentId: bill.student.id,
+          method,
+          allocations: selectedBills.map((x) => ({
+            billId: x.id,
+            amount: Number(amounts[x.id]),
+          })),
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw Error(d.message || "Pembayaran gagal.");
+      done(`Pembayaran ${d.receiptNumber} berhasil disimpan.`);
+    } catch (e: any) {
+      setError(e.message);
+      toast.error(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Modal title="Bayar SPP" close={close}>
+      <div className="payment-student">
+        <b>{bill.student.name}</b>
+        <span>
+          {bill.student.classRoom.name} · pilih satu atau beberapa periode
+        </span>
+      </div>
+      <div className="bill-picker">
+        {openBills.map((x) => (
+          <label className="bill-choice" key={x.id}>
+            <input
+              type="checkbox"
+              checked={!!selected[x.id]}
+              onChange={(e) =>
+                setSelected({ ...selected, [x.id]: e.target.checked })
+              }
+            />
+            <span>
+              <b>{x.periodLabel}</b>
+              <small>
+                Sisa{" "}
+                {formatRupiah(Number(x.amount) - Number(x.paidAmount || 0))}
+              </small>
+            </span>
+            <MoneyInput
+              className="choice-amount"
+              value={amounts[x.id] || ""}
+              disabled={!selected[x.id]}
+              onChange={(value) => setAmounts({ ...amounts, [x.id]: value })}
+            />
+          </label>
+        ))}
+      </div>
+      <div className="pay-breakdown">
+        <span>Total pembayaran</span>
+        <b>{formatRupiah(total)}</b>
+      </div>
+      <label className="field">
+        Metode pembayaran
+        <select value={method} onChange={(e) => setMethod(e.target.value)}>
+          <option value="CASH">Tunai</option>
+          <option value="TRANSFER">Transfer</option>
+        </select>
+      </label>
+      {error && <div className="error">{error}</div>}
+      <button
+        className="primary form-submit"
+        onClick={save}
+        disabled={busy || !selectedBills.length || total <= 0}
+        aria-busy={busy}
+      >
+        {busy ? (
+          <>
+            <LoaderCircle className="loading-spinner" size={16} /> Menyimpan...
+          </>
+        ) : (
+          "Simpan pembayaran"
+        )}
+      </button>
+    </Modal>
+  );
+}
+function Payments() {
+  const [items, setItems] = useState<any[]>([]),
+    [page, setPage] = useState(1),
+    [meta, setMeta] = useState<any>({}),
+    [loading, setLoading] = useState(true);
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/payments?page=${page}&pageSize=25`)
+      .then((r) => (r.ok ? r.json() : { items: [], pagination: {} }))
+      .then((d) => {
+        setItems(d.items || []);
+        setMeta(d.pagination || {});
+      })
+      .finally(() => setLoading(false));
+  }, [page]);
+  return (
+    <section className="panel spp-panel">
+      <div className="panel-head">
+        <div>
+          <h2>Riwayat pembayaran</h2>
+          <p>Pembayaran SPP yang berhasil dicatat.</p>
+        </div>
+      </div>
+      <div className="spp-table">
+        <div className="spp-tr spp-th">
+          <span>NO. KUITANSI</span>
+          <span>SISWA</span>
+          <span>TANGGAL</span>
+          <span>NOMINAL</span>
+          <span>METODE</span>
+          <span>DITERIMA OLEH</span>
+        </div>
+        {items.length ? (
+          items.map((p) => (
+            <div className="spp-tr" key={p.id}>
+              <span>{p.receipt?.receiptNumber || p.paymentNumber}</span>
+              <span>{p.student.name}</span>
+              <span>{new Date(p.paymentDate).toLocaleDateString("id-ID")}</span>
+              <span className="amount">{formatRupiah(Number(p.amount))}</span>
+              <span>{p.method === "CASH" ? "Tunai" : "Transfer"}</span>
+              <span>{p.recordedBy.name}</span>
+            </div>
+          ))
+        ) : (
+          <div className="empty">Belum ada pembayaran.</div>
+        )}
+        {loading && <div className="empty">Memuat pembayaran...</div>}
+        {meta.totalPages > 1 && (
+          <div className="pagination">
+            <span>
+              {(page - 1) * meta.pageSize + 1}–
+              {Math.min(page * meta.pageSize, meta.total)} dari {meta.total}
+            </span>
+            <button disabled={page <= 1} onClick={() => setPage(page - 1)}>
+              Sebelumnya
+            </button>
+            <b>
+              {page} / {meta.totalPages}
+            </b>
+            <button
+              disabled={page >= meta.totalPages}
+              onClick={() => setPage(page + 1)}
+            >
+              Berikutnya
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
 
-function BulkPaymentModal({bills,close,done}:{bills:any[];close:()=>void;done:(message:string)=>void}){const[amounts,setAmounts]=useState<Record<string,string>>(()=>Object.fromEntries(bills.map(b=>[b.id,String(Number(b.amount)-Number(b.paidAmount||0))]))),[method,setMethod]=useState('CASH'),[notes,setNotes]=useState(''),[busy,setBusy]=useState(false),[issues,setIssues]=useState<Record<string,string>>({}),toast=useToast();const total=bills.reduce((n,b)=>n+Number(amounts[b.id]||0),0);function validate(){const next:Record<string,string>={};for(const b of bills){const remaining=Number(b.amount)-Number(b.paidAmount||0),value=Number(amounts[b.id]||0);if(!value||value<=0)next[b.id]='Nominal harus lebih dari nol.';else if(value>remaining)next[b.id]='Nominal melebihi sisa tagihan.'}setIssues(next);return !Object.keys(next).length}async function submit(){if(busy||!validate())return;setBusy(true);try{const r=await fetch('/api/payments/bulk',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({method,notes:notes||undefined,items:bills.map(b=>({billId:b.id,amount:amounts[b.id]}))})});const d=await r.json();if(!r.ok){if(d.issues)setIssues(Object.fromEntries(d.issues.map((x:any)=>[x.billId,x.reason])));throw Error(d.message||'Pembayaran massal gagal diproses.')}done(`${d.count} pembayaran berhasil diproses. Total ${formatRupiah(d.totalAmount)}.`)}catch(e:any){toast.error(e.message)}finally{setBusy(false)}}return <div className="modal-backdrop" onMouseDown={close}><div className="modal bulk-modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><h2>Pembayaran Massal SPP</h2><button onClick={close} disabled={busy}><X size={18}/></button></div><p className="muted">{bills.length} siswa dipilih</p><div className="bulk-items">{bills.map(b=>{const remaining=Number(b.amount)-Number(b.paidAmount||0);return <div className="bulk-item" key={b.id}><div><b>{b.student.name}</b><small>{b.periodLabel||'-'} · Sisa {formatRupiah(remaining)}</small></div><MoneyInput value={amounts[b.id]||''} disabled={busy} onChange={v=>setAmounts(x=>({...x,[b.id]:v}))}/>{issues[b.id]&&<span className="bulk-issue">{issues[b.id]}</span>}</div>})}</div><div className="pay-breakdown"><span>Total pembayaran</span><b>{formatRupiah(total)}</b></div><label className="field">Metode pembayaran<select value={method} disabled={busy} onChange={e=>setMethod(e.target.value)}><option value="CASH">Tunai</option><option value="TRANSFER">Transfer</option></select></label><label className="field">Catatan<input value={notes} disabled={busy} onChange={e=>setNotes(e.target.value)} placeholder="Opsional"/></label><div className="bulk-actions"><button className="back-link" onClick={close} disabled={busy}>Batal</button><button className="primary" onClick={submit} disabled={busy}>{busy?<><LoaderCircle className="loading-spinner" size={16}/> Memproses...</>:`Proses ${bills.length} Pembayaran`}</button></div></div></div>}
+function BulkPaymentModal({
+  bills,
+  close,
+  done,
+}: {
+  bills: any[];
+  close: () => void;
+  done: (message: string) => void;
+}) {
+  const [amounts, setAmounts] = useState<Record<string, string>>(() =>
+      Object.fromEntries(
+        bills.map((b) => [
+          b.id,
+          String(Number(b.amount) - Number(b.paidAmount || 0)),
+        ]),
+      ),
+    ),
+    [method, setMethod] = useState("CASH"),
+    [notes, setNotes] = useState(""),
+    [busy, setBusy] = useState(false),
+    [issues, setIssues] = useState<Record<string, string>>({}),
+    toast = useToast();
+  const total = bills.reduce((n, b) => n + Number(amounts[b.id] || 0), 0);
+  function validate() {
+    const next: Record<string, string> = {};
+    for (const b of bills) {
+      const remaining = Number(b.amount) - Number(b.paidAmount || 0),
+        value = Number(amounts[b.id] || 0);
+      if (!value || value <= 0) next[b.id] = "Nominal harus lebih dari nol.";
+      else if (value > remaining) next[b.id] = "Nominal melebihi sisa tagihan.";
+    }
+    setIssues(next);
+    return !Object.keys(next).length;
+  }
+  async function submit() {
+    if (busy || !validate()) return;
+    setBusy(true);
+    try {
+      const r = await fetch("/api/payments/bulk", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          method,
+          notes: notes || undefined,
+          items: bills.map((b) => ({ billId: b.id, amount: amounts[b.id] })),
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        if (d.issues)
+          setIssues(
+            Object.fromEntries(d.issues.map((x: any) => [x.billId, x.reason])),
+          );
+        throw Error(d.message || "Pembayaran massal gagal diproses.");
+      }
+      done(
+        `${d.count} pembayaran berhasil diproses. Total ${formatRupiah(d.totalAmount)}.`,
+      );
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="modal-backdrop" onMouseDown={close}>
+      <div
+        className="modal bulk-modal"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <div className="modal-head">
+          <h2>Pembayaran Massal SPP</h2>
+          <button onClick={close} disabled={busy}>
+            <X size={18} />
+          </button>
+        </div>
+        <p className="muted">{bills.length} siswa dipilih</p>
+        <div className="bulk-items">
+          {bills.map((b) => {
+            const remaining = Number(b.amount) - Number(b.paidAmount || 0);
+            return (
+              <div className="bulk-item" key={b.id}>
+                <div>
+                  <b>{b.student.name}</b>
+                  <small>
+                    {b.periodLabel || "-"} · Sisa {formatRupiah(remaining)}
+                  </small>
+                </div>
+                <MoneyInput
+                  value={amounts[b.id] || ""}
+                  disabled={busy}
+                  onChange={(v) => setAmounts((x) => ({ ...x, [b.id]: v }))}
+                />
+                {issues[b.id] && (
+                  <span className="bulk-issue">{issues[b.id]}</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <div className="pay-breakdown">
+          <span>Total pembayaran</span>
+          <b>{formatRupiah(total)}</b>
+        </div>
+        <label className="field">
+          Metode pembayaran
+          <select
+            value={method}
+            disabled={busy}
+            onChange={(e) => setMethod(e.target.value)}
+          >
+            <option value="CASH">Tunai</option>
+            <option value="TRANSFER">Transfer</option>
+          </select>
+        </label>
+        <label className="field">
+          Catatan
+          <input
+            value={notes}
+            disabled={busy}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Opsional"
+          />
+        </label>
+        <div className="bulk-actions">
+          <button className="back-link" onClick={close} disabled={busy}>
+            Batal
+          </button>
+          <button className="primary" onClick={submit} disabled={busy}>
+            {busy ? (
+              <>
+                <LoaderCircle className="loading-spinner" size={16} />{" "}
+                Memproses...
+              </>
+            ) : (
+              `Proses ${bills.length} Pembayaran`
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
