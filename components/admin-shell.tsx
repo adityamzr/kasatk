@@ -2,14 +2,14 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { CircleCheck, GraduationCap, LayoutDashboard, LogOut, Menu, PiggyBank, ReceiptText, School, Settings, UserCog, UsersRound, X, type LucideIcon } from 'lucide-react';
+import { CircleCheck, GraduationCap, LayoutDashboard, LogOut, Menu, Banknote, ReceiptText, School, Settings, UserCog, UsersRound, X, type LucideIcon } from 'lucide-react';
 
 type Props = { children: React.ReactNode; user: { name: string; email: string; role: string }; permissions: string[] };
 type NavItem = { href: string; label: string; icon: LucideIcon; permission?: string; group: string; disabled?: boolean };
 const items: NavItem[] = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard.view', group: '' },
   { href: '/admin/spp', label: 'SPP & Tagihan', icon: ReceiptText, permission: 'billing.manage', group: 'KEUANGAN' },
-  { href: '/admin/savings', label: 'Tabungan Siswa', icon: PiggyBank, permission: 'savings.manage', group: 'KEUANGAN' },
+  { href: '/admin/savings', label: 'Tabungan Siswa', icon: Banknote, permission: 'savings.manage', group: 'KEUANGAN' },
   { href: '/admin/students', label: 'Siswa', icon: GraduationCap, permission: 'students.manage', group: 'DATA SEKOLAH' },
   { href: '/admin/parents', label: 'Orang Tua / Wali', icon: UsersRound, permission: 'students.manage', group: 'DATA SEKOLAH' },
   { href: '/admin/classes', label: 'Kelas', icon: School, permission: 'students.manage', group: 'DATA SEKOLAH' },
