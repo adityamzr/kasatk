@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { CircleCheck, LoaderCircle, GraduationCap, LayoutDashboard, LogOut, Menu, Banknote, ReceiptText, School, Settings, UserCog, UsersRound, X, type LucideIcon } from 'lucide-react';
+import { CircleCheck, LoaderCircle, GraduationCap, LayoutDashboard, LogOut, Menu, Banknote, ReceiptText, School, Settings, UserCog, UsersRound, History, FileBarChart, X, type LucideIcon } from 'lucide-react';
 
 type Props = { children: React.ReactNode; user: { name: string; email: string; role: string }; permissions: string[]; schoolName?: string };
 type NavItem = { href: string; label: string; icon: LucideIcon; permission?: string; group: string; disabled?: boolean };
@@ -14,8 +14,8 @@ const items: NavItem[] = [
   { href: '/admin/parents', label: 'Orang Tua / Wali', icon: UsersRound, permission: 'students.manage', group: 'DATA SEKOLAH' },
   { href: '/admin/classes', label: 'Kelas', icon: School, permission: 'students.manage', group: 'DATA SEKOLAH' },
   { href: '/admin/users', label: 'Pengguna', icon: UserCog, permission: 'users.manage', group: 'SISTEM' },
-  { href: '/admin/reports', label: 'Laporan', icon: ReceiptText, permission: 'reports.view', group: 'KEUANGAN' },
-  { href: '/admin/audit', label: 'Audit Aktivitas', icon: ReceiptText, permission: 'users.manage', group: 'SISTEM' },
+  { href: '/admin/reports', label: 'Laporan', icon: FileBarChart, permission: 'reports.view', group: 'KEUANGAN' },
+  { href: '/admin/audit', label: 'Audit Aktivitas', icon: History, permission: 'users.manage', group: 'SISTEM' },
   { href: '/admin/settings', label: 'Pengaturan', icon: Settings, permission: 'settings.manage', group: 'SISTEM' },
 ];
 

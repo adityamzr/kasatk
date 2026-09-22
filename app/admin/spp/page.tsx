@@ -1,5 +1,5 @@
 "use client";
-import{formatRupiah}from"@/lib/money";import Link from"next/link";import{useEffect,useState}from"react";import MoneyInput from"@/components/ui/MoneyInput";import{ArrowRight,Check,CreditCard,LoaderCircle,Plus,X}from"lucide-react";import{useToast}from"@/components/ui/toast";
+import{formatRupiah}from"@/lib/money";import Link from"next/link";import{useEffect,useState}from"react";import MoneyInput from"@/components/ui/MoneyInput";import{ArrowRight,Check,CreditCard,LoaderCircle,Plus,X,RefreshCw}from"lucide-react";import{useToast}from"@/components/ui/toast";import{formatDateTimeID}from"@/lib/date";
 
 const months = [
   "Januari",
@@ -107,6 +107,7 @@ export default function SppPage() {
       page,
     ],
   );
+  useEffect(() => { const f=()=>load(); window.addEventListener("focus",f); return()=>window.removeEventListener("focus",f); }, [page, debouncedSearch, filters.year, filters.month, filters.classRoomId, filters.status]);
   const eligibleBills = bills.filter(
     (b) => b.status === "UNPAID" || b.status === "PARTIAL",
   );
@@ -159,7 +160,7 @@ export default function SppPage() {
           </p>
         </div>
         <div className="spp-actions">
-          <button className="primary" onClick={() => setGenerator(true)}>
+          <button className="secondary" onClick={() => load()} disabled={loading}><RefreshCw size={15} className={loading?"loading-spinner":""}/> Segarkan</button><button className="primary" onClick={() => setGenerator(true)}>
             <Plus size={16} aria-hidden="true" /> Generate tagihan
           </button>
         </div>
@@ -682,7 +683,8 @@ function Payments() {
   const [items, setItems] = useState<any[]>([]),
     [page, setPage] = useState(1),
     [meta, setMeta] = useState<any>({}),
-    [loading, setLoading] = useState(true);
+    [loading, setLoading] = useState(true),
+    [refresh, setRefresh] = useState(0);
   useEffect(() => {
     setLoading(true);
     fetch(`/api/payments?page=${page}&pageSize=25`)
@@ -692,14 +694,15 @@ function Payments() {
         setMeta(d.pagination || {});
       })
       .finally(() => setLoading(false));
-  }, [page]);
+  }, [page,refresh]);
+  useEffect(() => { const f=()=>setRefresh(x=>x+1); window.addEventListener("focus",f); return()=>window.removeEventListener("focus",f)},[]);
   return (
     <section className="panel spp-panel">
       <div className="panel-head">
         <div>
           <h2>Riwayat pembayaran</h2>
           <p>Pembayaran SPP yang berhasil dicatat.</p>
-        </div>
+        </div><button className="secondary" onClick={()=>setRefresh(x=>x+1)} disabled={loading}><RefreshCw size={15} className={loading?"loading-spinner":""}/> Segarkan</button>
       </div>
       <div className="spp-table">
         <div className="spp-tr payment-history-row spp-th payment-history-header">
@@ -715,7 +718,7 @@ function Payments() {
             <div className="spp-tr payment-history-row" key={p.id}>
               <span>{p.receipt?.receiptNumber || p.paymentNumber}</span>
               <span>{p.student.name}</span>
-              <span>{new Date(p.paymentDate).toLocaleDateString("id-ID")}</span>
+              <span>{formatDateTimeID(p.paymentDate)}</span>
               <span className="amount">{formatRupiah(Number(p.amount))}</span>
               <span>{p.method === "CASH" ? "Tunai" : "Transfer"}</span>
               <span>{p.recordedBy.name}</span>

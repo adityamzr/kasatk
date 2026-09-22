@@ -1,0 +1,41 @@
+export const dynamic='force-dynamic';
+import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
+import { z } from 'zod';
+import { prisma } from '@/lib/prisma';
+import { getCurrentUser } from '@/lib/auth';
+import { requirePermission, errorResponse } from '@/lib/api';
+import { createSavingsTransaction } from '@/lib/savings-service';
+
+const schema=z.object({transactionDate:z.string().optional(),notes:z.string().trim().max(500).optional().nullable(),items:z.array(z.object({studentId:z.string().min(1),amount:z.union([z.number().int().positive(),z.string().regex(/^[1-9]\d*$/,'Nominal harus berupa angka rupiah tanpa format.').transform(Number)])})).min(1).max(50)});
+
+export async function POST(req:Request){
+  const denied=await requirePermission('savings.manage');if(denied)return denied;
+  try{
+    const user=await getCurrentUser();if(!user)return NextResponse.json({message:'Sesi login tidak ditemukan.'},{status:401});
+    const input=schema.parse(await req.json());const date=input.transactionDate?new Date(input.transactionDate):undefined;
+    if(date&&Number.isNaN(date.getTime()))return NextResponse.json({code:'BULK_WITHDRAWAL_VALIDATION_FAILED',message:'Tanggal transaksi tidak valid.',issues:[]},{status:400});
+    let result:any;
+    for(let attempt=0;attempt<3;attempt++)try{
+      result=await prisma.$transaction(async tx=>{
+        if(new Set(input.items.map(x=>x.studentId)).size!==input.items.length){const e:any=new Error('Siswa duplikat tidak dapat diproses.');e.code='BULK_WITHDRAWAL_VALIDATION_FAILED';e.issues=[];throw e}
+        const students=await tx.student.findMany({where:{id:{in:input.items.map(x=>x.studentId)}},select:{id:true,status:true}});
+        const issues:any[]=[];
+        for(const item of input.items){
+          const student=students.find(x=>x.id===item.studentId);
+          if(!student){issues.push({studentId:item.studentId,reason:'Siswa tidak ditemukan.'});continue}
+          if(student.status!=='ACTIVE')issues.push({studentId:item.studentId,reason:'Siswa tidak aktif.'});
+          const latest=await tx.savingsTransaction.findFirst({where:{studentId:item.studentId,status:'COMPLETED'},orderBy:[{transactionDate:'desc'},{createdAt:'desc'}],select:{balanceAfter:true}});
+          const balance=latest?.balanceAfter??new Prisma.Decimal(0);const amount=new Prisma.Decimal(item.amount);
+          if(amount.lte(0))issues.push({studentId:item.studentId,reason:'Nominal harus lebih dari nol.'});
+          else if(amount.gt(balance))issues.push({studentId:item.studentId,reason:`Saldo tidak mencukupi. Saldo saat ini ${balance.toString()}.`});
+        }
+        if(issues.length){const e:any=new Error('Beberapa penarikan tidak dapat diproses.');e.code='BULK_WITHDRAWAL_VALIDATION_FAILED';e.issues=issues;throw e}
+        const transactions:any[]=[];
+        for(const item of input.items){const r=await createSavingsTransaction(tx,{studentId:item.studentId,type:'WITHDRAWAL',amount:item.amount,notes:input.notes,transactionDate:date,recordedById:user.id});transactions.push({studentId:item.studentId,transactionId:r.transaction.id,transactionNumber:r.transaction.transactionNumber,receiptNumber:r.receipt.receiptNumber})}
+        return {transactions,totalAmount:input.items.reduce((n,x)=>n.add(new Prisma.Decimal(x.amount)),new Prisma.Decimal(0))};
+      },{isolationLevel:Prisma.TransactionIsolationLevel.Serializable});break;
+    }catch(e:any){if(e?.code==='P2034'&&attempt<2)continue;throw e}
+    return NextResponse.json({success:true,count:result.transactions.length,totalAmount:result.totalAmount.toString(),transactions:result.transactions},{status:201});
+  }catch(e:any){if(e?.code==='BULK_WITHDRAWAL_VALIDATION_FAILED')return NextResponse.json({code:e.code,message:e.message,issues:e.issues||[]},{status:400});return errorResponse(e)}
+}
