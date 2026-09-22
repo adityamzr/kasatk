@@ -14,7 +14,7 @@ const items: NavItem[] = [
   { href: '/admin/parents', label: 'Orang Tua / Wali', icon: UsersRound, permission: 'students.manage', group: 'DATA SEKOLAH' },
   { href: '/admin/classes', label: 'Kelas', icon: School, permission: 'students.manage', group: 'DATA SEKOLAH' },
   { href: '/admin/users', label: 'Pengguna', icon: UserCog, permission: 'users.manage', group: 'SISTEM' },
-  { href: '#settings', label: 'Pengaturan', icon: Settings, group: 'SISTEM', disabled: true },
+  { href: '/admin/settings', label: 'Pengaturan', icon: Settings, permission: 'users.manage', group: 'SISTEM' },
 ];
 
 export default function AdminShell({ children, user, permissions }: Props) {
