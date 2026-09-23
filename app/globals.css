@@ -68,16 +68,52 @@ button:not(:disabled),a.primary,a.quick,.table-action{cursor:pointer}button:disa
 .active-badge{display:inline-flex;align-items:center;justify-content:center;width:max-content;max-width:100%;min-height:24px;padding:4px 9px;border-radius:999px;font-size:10.5px;font-weight:600;line-height:1;white-space:nowrap;justify-self:start;background:#e7f7ee;color:#19734a}.parent-status{width:max-content!important;justify-self:start}
 
 .bulk-bar .bulk-withdraw-action{background:#fff5f4;border:1px solid #f2c8c4;color:#d94d45;box-shadow:none}.bulk-bar .bulk-withdraw-action:hover:not(:disabled){background:#ffefed;color:#c63f38}
-.parent-switcher-trigger{min-height:38px;display:inline-flex;align-items:center;gap:6px;border:1px solid #b9e3ed;background:#effbfe;color:#078dbd;border-radius:8px;padding:8px 11px;font:inherit;font-size:10px;font-weight:600;cursor:pointer}.parent-switcher-trigger:hover{background:#dff6fb}.parent-child-heading-label{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}.parent-child-heading-label>span{font-size:10px;color:#8a989e}.parent-child-sheet-backdrop{position:fixed;inset:0;z-index:30;display:flex;align-items:flex-end;background:#152f3580}.parent-child-sheet{width:100%;background:#fff;border-radius:18px 18px 0 0;padding:10px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px #17343b26}.parent-sheet-handle{width:38px;height:4px;border-radius:99px;background:#d6e1e4;margin:0 auto 14px}.parent-sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.parent-sheet-head h2{font-size:15px;margin:0;text-transform:uppercase;letter-spacing:.4px}.parent-sheet-head button{border:0;background:transparent;color:#74858c;padding:7px;cursor:pointer}.parent-child-option{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid transparent;border-radius:10px;background:#fff;padding:12px 10px;text-align:left;font:inherit;cursor:pointer}.parent-child-option.selected{background:#eaf9fc;border-color:#b9e3ed}.parent-child-option b,.parent-child-option small{display:block}.parent-child-option b{font-size:12px;color:var(--ink)}.parent-child-option small{font-size:10px;color:#87959c;margin-top:4px}.parent-child-option em{font-style:normal}.parent-account-card,.parent-connected-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:17px;margin-bottom:14px}.parent-account-card{display:flex;align-items:flex-start;gap:13px}.parent-account-icon{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#eaf9fc;color:#078dbd}.parent-account-info{display:grid;gap:4px}.parent-account-info span{font-size:10px;color:#8b989e;margin-top:3px}.parent-account-info b{font-size:13px;margin-bottom:5px}.parent-connected-card h2{font-size:14px;margin:0 0 10px}.parent-connected-child{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #edf1f2;padding:12px 0}.parent-connected-child b,.parent-connected-child small{display:block}.parent-connected-child b{font-size:11px}.parent-connected-child small{font-size:10px;color:#8b989e;margin-top:3px}.parent-account-logout{width:100%;min-height:42px;display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid #f2c8c4;background:#fff5f4;color:#d94d45;border-radius:8px;padding:10px;font:inherit;font-size:11px;font-weight:600;cursor:pointer}.parent-account-logout:hover{background:#ffefed}.parent-account-logout:disabled{opacity:.6;cursor:not-allowed}.parent-account-logout:focus-visible,.parent-switcher-trigger:focus-visible,.parent-child-option:focus-visible{outline:3px solid #079bd244;outline-offset:2px}.parent-bottom-nav a{flex:1;width:auto;max-width:none}.parent-bottom-nav{justify-content:stretch}
+.parent-switcher-trigger{min-height:38px;display:inline-flex;align-items:center;gap:6px;border:1px solid #b9e3ed;background:#effbfe;color:#078dbd;border-radius:8px;padding:8px 11px;font:inherit;font-size:10px;font-weight:600;cursor:pointer}.parent-switcher-trigger:hover{background:#dff6fb}.parent-child-heading-label{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}.parent-child-heading-label>span{font-size:10px;color:#8a989e}.parent-child-sheet{width:100%;background:#fff;border-radius:18px 18px 0 0;padding:10px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px #17343b26}.parent-sheet-handle{width:38px;height:4px;border-radius:99px;background:#d6e1e4;margin:0 auto 14px}.parent-sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.parent-sheet-head h2{font-size:15px;margin:0;text-transform:uppercase;letter-spacing:.4px}.parent-sheet-head button{border:0;background:transparent;color:#74858c;padding:7px;cursor:pointer}.parent-child-option{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid transparent;border-radius:10px;background:#fff;padding:12px 10px;text-align:left;font:inherit;cursor:pointer}.parent-child-option.selected{background:#eaf9fc;border-color:#b9e3ed}.parent-child-option b,.parent-child-option small{display:block}.parent-child-option b{font-size:12px;color:var(--ink)}.parent-child-option small{font-size:10px;color:#87959c;margin-top:4px}.parent-child-option em{font-style:normal}.parent-account-card,.parent-connected-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:17px;margin-bottom:14px}.parent-account-card{display:flex;align-items:flex-start;gap:13px}.parent-account-icon{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#eaf9fc;color:#078dbd}.parent-account-info{display:grid;gap:4px}.parent-account-info span{font-size:10px;color:#8b989e;margin-top:3px}.parent-account-info b{font-size:13px;margin-bottom:5px}.parent-connected-card h2{font-size:14px;margin:0 0 10px}.parent-connected-child{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #edf1f2;padding:12px 0}.parent-connected-child b,.parent-connected-child small{display:block}.parent-connected-child b{font-size:11px}.parent-connected-child small{font-size:10px;color:#8b989e;margin-top:3px}.parent-account-logout{width:100%;min-height:42px;display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid #f2c8c4;background:#fff5f4;color:#d94d45;border-radius:8px;padding:10px;font:inherit;font-size:11px;font-weight:600;cursor:pointer}.parent-account-logout:hover{background:#ffefed}.parent-account-logout:disabled{opacity:.6;cursor:not-allowed}.parent-account-logout:focus-visible,.parent-switcher-trigger:focus-visible,.parent-child-option:focus-visible{outline:3px solid #079bd244;outline-offset:2px}.parent-bottom-nav a{flex:1;width:auto;max-width:none}.parent-bottom-nav{justify-content:stretch}
 @media(max-width:380px){.parent-header{padding-left:14px;padding-right:14px}.parent-header b{font-size:12px}.parent-header span{font-size:9px}.parent-switcher-trigger{padding:7px 8px;font-size:9px}.parent-bottom-nav{padding-left:5px;padding-right:5px}.parent-bottom-nav a{font-size:8px}}
 
-.parent-child-sheet-backdrop{z-index:100}.parent-child-sheet{position:relative;z-index:101}.parent-child-heading-main{display:flex;align-items:center;justify-content:space-between;gap:12px}.parent-child-heading-main h1{margin:0}.parent-child-check{color:#1d9f6b;flex:none}
-/* Parent child picker: keep the complete sheet above the fixed navigation. */
-.parent-child-sheet-backdrop{position:fixed!important;inset:0!important;z-index:100!important;display:flex!important;align-items:flex-end!important;overflow:hidden!important}
-.parent-child-sheet{position:relative!important;z-index:101!important;display:block!important;width:100%!important;max-height:85dvh;overflow-y:auto;flex:0 0 auto;padding-bottom:calc(18px + env(safe-area-inset-bottom))}
-
-/* Parent child picker uses a centered blurred drawer instead of a bottom sheet. */
-.parent-child-sheet-backdrop{align-items:center!important;justify-content:center!important;background:rgba(15,35,42,.46)!important;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:20px!important;overflow:auto!important}
-.parent-child-sheet{width:min(100%,420px)!important;max-height:min(80dvh,560px)!important;border-radius:18px!important;padding:18px!important;box-shadow:0 20px 60px rgba(15,35,42,.28)!important;overflow-y:auto!important}
-.parent-sheet-handle{display:none}
-@media(max-width:500px){.parent-child-sheet-backdrop{padding:16px!important}.parent-child-sheet{max-height:82dvh!important}}
+.parent-child-sheet{position:relative;z-index:101}.parent-child-heading-main{display:flex;align-items:center;justify-content:space-between;gap:12px}.parent-child-heading-main h1{margin:0}.parent-child-check{color:#1d9f6b;flex:none}
+/* Final Parent Portal child picker: true mobile bottom sheet, never clipped by the bottom navigation. */
+.parent-sheet-backdrop{
+  position:fixed!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100vh!important;
+  height:100dvh!important;
+  z-index:9999!important;
+  display:flex!important;
+  align-items:flex-end!important;
+  justify-content:stretch!important;
+  padding:0!important;
+  overflow:hidden!important;
+  background:rgba(15,35,42,.46)!important;
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+}
+.parent-child-sheet{
+  position:relative!important;
+  z-index:10000!important;
+  flex:0 0 auto!important;
+  width:100%!important;
+  max-width:680px!important;
+  max-height:calc(100vh - 12px)!important;
+  max-height:calc(100dvh - 12px)!important;
+  margin:0 auto!important;
+  padding:10px 18px max(18px,env(safe-area-inset-bottom))!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  border-radius:18px 18px 0 0!important;
+  background:#fff!important;
+  box-shadow:0 -10px 30px rgba(23,52,59,.18)!important;
+}
+.parent-sheet-handle{display:block!important}
+@media(min-width:700px){
+  .parent-sheet-backdrop{padding:24px!important;align-items:center!important}
+  .parent-child-sheet{
+    width:min(100%,520px)!important;
+    max-height:calc(100dvh - 48px)!important;
+    border-radius:18px!important;
+    padding:18px!important;
+  }
+  .parent-sheet-handle{display:none!important}
+}
