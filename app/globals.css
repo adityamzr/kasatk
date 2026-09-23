@@ -72,3 +72,6 @@ button:not(:disabled),a.primary,a.quick,.table-action{cursor:pointer}button:disa
 @media(max-width:380px){.parent-header{padding-left:14px;padding-right:14px}.parent-header b{font-size:12px}.parent-header span{font-size:9px}.parent-switcher-trigger{padding:7px 8px;font-size:9px}.parent-bottom-nav{padding-left:5px;padding-right:5px}.parent-bottom-nav a{font-size:8px}}
 
 .parent-child-sheet-backdrop{z-index:100}.parent-child-sheet{position:relative;z-index:101}.parent-child-heading-main{display:flex;align-items:center;justify-content:space-between;gap:12px}.parent-child-heading-main h1{margin:0}.parent-child-check{color:#1d9f6b;flex:none}
+/* Parent child picker: keep the complete sheet above the fixed navigation. */
+.parent-child-sheet-backdrop{position:fixed!important;inset:0!important;z-index:100!important;display:flex!important;align-items:flex-end!important;overflow:hidden!important}
+.parent-child-sheet{position:relative!important;z-index:101!important;display:block!important;width:100%!important;max-height:85dvh;overflow-y:auto;flex:0 0 auto;padding-bottom:calc(18px + env(safe-area-inset-bottom))}
