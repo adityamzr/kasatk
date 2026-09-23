@@ -75,3 +75,9 @@ button:not(:disabled),a.primary,a.quick,.table-action{cursor:pointer}button:disa
 /* Parent child picker: keep the complete sheet above the fixed navigation. */
 .parent-child-sheet-backdrop{position:fixed!important;inset:0!important;z-index:100!important;display:flex!important;align-items:flex-end!important;overflow:hidden!important}
 .parent-child-sheet{position:relative!important;z-index:101!important;display:block!important;width:100%!important;max-height:85dvh;overflow-y:auto;flex:0 0 auto;padding-bottom:calc(18px + env(safe-area-inset-bottom))}
+
+/* Parent child picker uses a centered blurred drawer instead of a bottom sheet. */
+.parent-child-sheet-backdrop{align-items:center!important;justify-content:center!important;background:rgba(15,35,42,.46)!important;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:20px!important;overflow:auto!important}
+.parent-child-sheet{width:min(100%,420px)!important;max-height:min(80dvh,560px)!important;border-radius:18px!important;padding:18px!important;box-shadow:0 20px 60px rgba(15,35,42,.28)!important;overflow-y:auto!important}
+.parent-sheet-handle{display:none}
+@media(max-width:500px){.parent-child-sheet-backdrop{padding:16px!important}.parent-child-sheet{max-height:82dvh!important}}
