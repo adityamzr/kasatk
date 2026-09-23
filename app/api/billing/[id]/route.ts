@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { requirePermission, errorResponse } from '@/lib/api';
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const denied = await requirePermission('billing.manage');
+  const denied = await requirePermission('billing.view');
   if (denied) return denied;
   try {
     const bill = await prisma.bill.findUnique({

@@ -6,7 +6,7 @@ import { requirePermission, errorResponse } from '@/lib/api';
 import { normalizePhone } from '@/lib/phone';
 
 export async function GET(req: Request) {
-  const denied = await requirePermission('students.manage'); if (denied) return denied;
+  const denied = await requirePermission('students.view'); if (denied) return denied;
   try { const url = new URL(req.url); const search = url.searchParams.get('search')?.trim(); const classRoomId = url.searchParams.get('classRoomId') || undefined; const status = url.searchParams.get('status') as any || undefined; const page = Math.max(1, Number(url.searchParams.get('page') || 1)); const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get('pageSize') || 25))); const where:any={ ...(search ? { OR: [{ name: { contains: search, mode: 'insensitive' } }, { nis: { contains: search, mode: 'insensitive' } }] } : {}), ...(classRoomId ? { classRoomId } : {}), ...(status ? { status } : {}) }; const [items,total]=await prisma.$transaction([prisma.student.findMany({where,orderBy:{name:'asc'},skip:(page-1)*pageSize,take:pageSize,include:{classRoom:true,parents:{include:{parent:true}}}}),prisma.student.count({where})]); return NextResponse.json({items,pagination:{page,pageSize,total,totalPages:Math.ceil(total/pageSize)}});
   } catch (e: any) { if (e?.code === 'PARENT_PHONE_EXISTS') return NextResponse.json({ code: e.code, message: e.message, guardianClientId: e.guardianClientId, existingParent: e.existingParent }, { status: 409 }); return errorResponse(e); }
 }

@@ -4,13 +4,13 @@ import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
-import { requirePermission, errorResponse } from '@/lib/api';
+import { requireAllPermissions, errorResponse } from '@/lib/api';
 import { createSavingsTransaction } from '@/lib/savings-service';
 
 const schema=z.object({transactionDate:z.string().optional(),notes:z.string().trim().max(500).optional().nullable(),items:z.array(z.object({studentId:z.string().min(1),amount:z.union([z.number().int().positive(),z.string().regex(/^[1-9]\d*$/,'Nominal harus berupa angka rupiah tanpa format.').transform(Number)])})).min(1).max(50)});
 
 export async function POST(req:Request){
-  const denied=await requirePermission('savings.manage');if(denied)return denied;
+  const denied=await requireAllPermissions(['savings.withdraw','savings.bulk']);if(denied)return denied;
   try{
     const user=await getCurrentUser();if(!user)return NextResponse.json({message:'Sesi login tidak ditemukan.'},{status:401});
     const input=schema.parse(await req.json());const date=input.transactionDate?new Date(input.transactionDate):undefined;
