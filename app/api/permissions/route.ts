@@ -1,0 +1,1 @@
+export const dynamic='force-dynamic';import{NextResponse}from'next/server';import{requirePermission}from'@/lib/api';import{PERMISSION_GROUPS}from'@/lib/permissions';export async function GET(){const denied=await requirePermission('roles.view');if(denied)return denied;return NextResponse.json({groups:PERMISSION_GROUPS})}
