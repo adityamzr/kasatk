@@ -1,5 +1,5 @@
 "use client";
-import{formatRupiah}from"@/lib/money";import Link from"next/link";import{useEffect,useState}from"react";import MoneyInput from"@/components/ui/MoneyInput";import{ArrowRight,Check,CreditCard,LoaderCircle,Plus,X,RefreshCw}from"lucide-react";import{useToast}from"@/components/ui/toast";import{formatDateTimeID}from"@/lib/date";
+import{formatRupiah}from"@/lib/money";import Link from"next/link";import{useEffect,useState}from"react";import MoneyInput from"@/components/ui/MoneyInput";import{ArrowRight,Check,CreditCard,LoaderCircle,Plus,X,RefreshCw}from"lucide-react";import{useToast}from"@/components/ui/toast";import{useAdminPermissions}from"@/components/admin-permissions";import{formatDateTimeID}from"@/lib/date";
 
 const months = [
   "Januari",
@@ -38,7 +38,7 @@ export default function SppPage() {
     [bulkOpen, setBulkOpen] = useState(false),
     [selectedBulk, setSelectedBulk] = useState<Record<string, boolean>>({}),
     [debouncedSearch, setDebouncedSearch] = useState("");
-  const toast = useToast();
+  const toast = useToast(); const access=useAdminPermissions(),canGenerate=access.has("billing.generate"),canViewPayments=access.has("payments.view"),canPay=access.has("payments.create"),canBulkPay=access.hasAll(["payments.create","payments.bulk"]);
   async function load() {
     setLoading(true);
     const q = new URLSearchParams(
@@ -108,9 +108,9 @@ export default function SppPage() {
     ],
   );
   useEffect(() => { const f=()=>load(); window.addEventListener("focus",f); return()=>window.removeEventListener("focus",f); }, [page, debouncedSearch, filters.year, filters.month, filters.classRoomId, filters.status]);
-  const eligibleBills = bills.filter(
+  const eligibleBills = canBulkPay ? bills.filter(
     (b) => b.status === "UNPAID" || b.status === "PARTIAL",
-  );
+  ) : [];
   const selectedBills = bills.filter(
     (b) =>
       selectedBulk[b.id] && (b.status === "UNPAID" || b.status === "PARTIAL"),
@@ -160,9 +160,9 @@ export default function SppPage() {
           </p>
         </div>
         <div className="spp-actions">
-          <button className="secondary" onClick={() => load()} disabled={loading}><RefreshCw size={15} className={loading?"loading-spinner":""}/> Segarkan</button><button className="primary" onClick={() => setGenerator(true)}>
+          <button className="secondary" onClick={() => load()} disabled={loading}><RefreshCw size={15} className={loading?"loading-spinner":""}/> Segarkan</button>{canGenerate&&<button className="primary" onClick={() => setGenerator(true)}>
             <Plus size={16} aria-hidden="true" /> Generate tagihan
-          </button>
+          </button>}
         </div>
       </div>
       {message && (
@@ -180,12 +180,12 @@ export default function SppPage() {
         >
           Daftar tagihan
         </button>
-        <button
+        {canViewPayments&&<button
           className={tab === "payments" ? "selected" : ""}
           onClick={() => setTab("payments")}
         >
           Riwayat pembayaran
-        </button>
+        </button>}
       </div>
       {tab === "bills" ? (
         <>
@@ -284,6 +284,7 @@ export default function SppPage() {
                   <input
                     type="checkbox"
                     aria-label="Pilih semua tagihan yang dapat dibayar"
+                    disabled={!canBulkPay}
                     checked={
                       eligibleBills.length > 0 &&
                       eligibleBills.every((b) => selectedBulk[b.id])
@@ -313,7 +314,7 @@ export default function SppPage() {
                         type="checkbox"
                         aria-label={`Pilih tagihan ${b.student.name}`}
                         disabled={
-                          b.status !== "UNPAID" && b.status !== "PARTIAL"
+                          !canBulkPay || (b.status !== "UNPAID" && b.status !== "PARTIAL")
                         }
                         checked={!!selectedBulk[b.id]}
                         onChange={(e) => toggleBulk(b.id, e.target.checked)}
@@ -342,7 +343,7 @@ export default function SppPage() {
                       <button
                         className="pay-btn"
                         disabled={
-                          b.status === "PAID" || b.status === "CANCELLED"
+                          !canPay || b.status === "PAID" || b.status === "CANCELLED"
                         }
                         onClick={() => setPaying(b)}
                       >
